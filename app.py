@@ -396,7 +396,7 @@ BƯỚC 6: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                         content_payload.append(prompt)
 
                         response = client.models.generate_content(
-                            model="gemini-3.-flash", contents=content_payload
+                            model="gemini-3.6-flash", contents=content_payload
                         )
 
                         if response:
