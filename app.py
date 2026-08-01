@@ -11,7 +11,7 @@ from google import genai
 from PIL import Image
 import streamlit as st
 
-# --- CẤU HÌNH TRANG ---
+# --- CẤU HÌNH TRANG (ĐẢM BẢO SIDEBAR MẶC ĐỊNH MỞ) ---
 st.set_page_config(
     page_title="Tử Vi Đẩu Số - Luận Giải & Cách Cục",
     page_icon="☯️",
@@ -19,14 +19,16 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN (CUSTOM CSS) ---
+# --- TUỲ CHỈNH GIAO DIỆN (SỬA LỖI ẨN SIDEBAR CỦA CSS) ---
 st.markdown(
     """
     <style>
-    /* 1. Ẩn thanh Header & Footer của Streamlit Cloud */
-    header[data-testid="stHeader"] {
+    /* 1. Sửa lỗi CSS: Chỉ ẩn nút Share/Toolbar/Footer, KHÔNG ẩn nút toggle Sidebar */
+    [data-testid="stHeader"] {
+        background-color: transparent !important;
+    }
+    div[data-testid="stToolbar"] {
         visibility: hidden;
-        height: 0px;
     }
     footer {
         visibility: hidden;
