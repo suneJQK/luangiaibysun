@@ -1,4 +1,5 @@
 streamlit
 google-genai
-Pillow
+pillow
 pypdf
+PyGithub
