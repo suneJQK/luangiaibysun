@@ -19,11 +19,28 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN (ĐÃ GIỮ LẠI NÚT 3 GẠCH SIDEBAR) ---
+# --- TUỲ CHỈNH GIAO DIỆN & BẮT BUỘC HIỂN THỊ NÚT 3 GẠCH ---
 st.markdown(
     """
     <style>
-    /* 1. Chỉ ẩn Footer và Toolbar dịch vụ, GIỮ NGUYÊN Header để nút 3 gạch không bị mất */
+    /* 1. HIỂN THỊ CƯỠNG CHẾ NÚT 3 GẠCH (SIDEBAR TOGGLE BUTTON) */
+    button[data-testid="stSidebarCollapseButton"],
+    button[data-testid="baseButton-header"],
+    div[data-testid="stSidebarNav"] button,
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 999999 !important;
+    }
+
+    /* Giữ vị trí cố định cho nút 3 gạch ở góc trên bên trái */
+    [data-testid="collapsedControl"] {
+        top: 0.5rem !important;
+        left: 0.5rem !important;
+    }
+
+    /* 2. Chỉ ẩn Footer và Toolbar dịch vụ */
     div[data-testid="stToolbar"] {
         visibility: hidden;
     }
@@ -31,12 +48,12 @@ st.markdown(
         visibility: hidden;
     }
 
-    /* 2. Màu nền trang web */
+    /* 3. Màu nền trang web */
     .stApp {
         background-color: #0e1117;
     }
 
-    /* 3. Kiểu dáng Tiêu đề chính & Tiêu đề phụ */
+    /* 4. Kiểu dáng Tiêu đề chính & Tiêu đề phụ */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -52,14 +69,14 @@ st.markdown(
         margin-bottom: 2rem;
     }
 
-    /* 4. Tùy chỉnh khung Expander */
+    /* 5. Tùy chỉnh khung Expander */
     div[data-testid="stExpander"] {
         background-color: #1a202c;
         border-radius: 10px;
         border: 1px solid #2d3748;
     }
 
-    /* 5. Tùy chỉnh Nút bấm Nổi bật (Primary Button) */
+    /* 6. Tùy chỉnh Nút bấm Nổi bật (Primary Button) */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #d4af37 0%, #f6d365 100%);
         color: #1a202c;
@@ -434,7 +451,7 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                         content_payload.append(prompt)
 
                         response = client.models.generate_content(
-                            model="gemini-3.6-flash", contents=content_payload
+                            model="gemini-2.5-flash", contents=content_payload
                         )
 
                         if response:
