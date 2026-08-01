@@ -13,7 +13,7 @@ import streamlit as st
 
 # --- CẤU HÌNH TRANG ---
 st.set_page_config(
-    page_title="Tử Vi Đẩu Số - Luận Giải Toàn Diện",
+    page_title="Tử Vi Đẩu Số - Luận Giải",
     page_icon="☯️",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -103,7 +103,7 @@ def upload_to_github(uploaded_file):
         return False, str(e)
 
 
-# --- HÀM ĐỌC CACHE DỮ LIỆU SÁCH ---
+# --- HÀM ĐỌC CACHE DỮ LIỆU SÁCH JSON ---
 @st.cache_data(ttl=3600)
 def load_cached_data():
     if not CACHE_FILE.exists():
@@ -112,12 +112,33 @@ def load_cached_data():
         with open(CACHE_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
             if isinstance(data, list):
-                return "\n".join([str(item) for item in data])
+                return "\n\n".join([str(item) for item in data])
             elif isinstance(data, dict):
-                return json.dumps(data, ensure_ascii=False)
+                return json.dumps(data, ensure_ascii=False, indent=2)
             return str(data)
     except Exception:
         return ""
+
+
+def get_book_list_info():
+    if not CACHE_FILE.exists():
+        return []
+    try:
+        with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            titles = []
+            if isinstance(data, list):
+                for idx, item in enumerate(data):
+                    if isinstance(item, dict) and "title" in item:
+                        titles.append(
+                            f"{idx+1}. {item['title']} (Tác giả: {item.get('author', 'N/A')})"
+                        )
+                    elif isinstance(item, str):
+                        first_line = item.strip().split("\n")[0][:80]
+                        titles.append(f"{idx+1}. {first_line}...")
+            return titles
+    except Exception:
+        return []
 
 
 # --- HÀM CẮT 12 CUNG ---
@@ -167,7 +188,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="sub-header">Hệ thống luận giải thông minh ứng dụng AI '"</div>",
+    '<div class="sub-header">Hệ thống luận giải thông minh'
+    "</div>",
     unsafe_allow_html=True,
 )
 
@@ -179,13 +201,15 @@ with st.sidebar:
     selected_year = st.number_input(
         "🗓️ Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1
     )
+
+    # VÙNG YÊU CẦU BỔ SUNG CỦA GIA CHỦ
     user_note = st.text_area(
         "📝 Ghi chú / Yêu cầu thêm:",
         value=(
             "Yêu cầu AI phân tích chi tiết, minh bạch quy tắc và không bỏ sót bất"
             " kỳ cung hay tháng nào."
         ),
-        height=100,
+        height=120,
     )
 
     st.markdown("---")
@@ -201,9 +225,9 @@ with st.sidebar:
     else:
         st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
 
-# --- CHỈ GIỮ LẠI 2 TAB ---
+# --- DANH SÁCH TAB CHÍNH ---
 tab_main, tab_books = st.tabs(
-    ["🔮 Luận Giải Lá Số", "📚 Kho Dữ Liệu Sách"]
+    ["🔮 Luận Giải Lá Số", "📚 Kho Dữ Liệu Sách & Trích Dẫn"]
 )
 
 # ==========================================
@@ -222,11 +246,11 @@ with tab_main:
         if uploaded_file:
             # Tự động đẩy lên GitHub
             if st.session_state.get("last_uploaded") != uploaded_file.name:
-                with st.spinner("🐙 Đang sao lưu lá số lên GitHub..."):
+                with st.spinner("🐙 Đang tải lá số ..."):
                     gh_success, gh_msg = upload_to_github(uploaded_file)
                     if gh_success:
                         st.toast(
-                            "🐙 Đã tự động lưu lá số lên GitHub!", icon="✅"
+                            "🐙 Đã lưu lá số !", icon="✅"
                         )
                     else:
                         st.caption(f"⚠️ Lưu GitHub thất bại: {gh_msg}")
@@ -234,7 +258,7 @@ with tab_main:
 
             image = Image.open(uploaded_file).convert("RGB")
 
-            # Căn chỉnh lề cài đặt mặc định theo thông số mới: (Top: 0, Bottom: 3, Side: 0, Overlap: 15)
+            # Căn chỉnh lề theo thông số mặc định (Top: 0, Bottom: 3, Side: 0, Overlap: 15)
             with st.expander("🛠️ Căn chỉnh lề & Vạch ngăn Tuần/Triệt", expanded=False):
                 top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
                 bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
@@ -279,7 +303,7 @@ with tab_main:
                 )
             else:
                 with st.spinner(
-                    "⚡ AI Gemini đang phân tích 12 Cung & Lập Bản Luận Giải..."
+                    "⚡ AI đang đối chiếu Kho Sách & Phân Tích ..."
                 ):
                     pdf_text_context = load_cached_data()
                     truncated_context = (
@@ -288,6 +312,7 @@ with tab_main:
                         else "Sử dụng kiến thức Tử Vi Nam Phái, Bắc Phái, Trung Châu Phái."
                     )
 
+                    # PROMPT CHUẨN XÁC NGUYÊN BẢN THEO YÊU CẦU CỦA BẠN
                     prompt = f"""
 Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu (kết hợp kiến thức Nam Phái, Bắc Phái và Trung Châu Phái). Nhiệm vụ của bạn là đọc hiểu lá số và thực hiện một bản luận giải CỰC KỲ CHI TIẾT.
 
@@ -296,7 +321,10 @@ BẮT BUỘC tuân thủ NGHIÊM NGẶT Quy trình 6 bước dưới đây. Tạ
 ====================================================================
 MA TRẬN LUẬN GIẢI: QUY TRÌNH TÍCH HỢP QUY TẮC
 ====================================================================
-
+YÊU CẦU ĐẶC BIỆT VỀ TRÍCH DẪN & THAM KHẢO TÀI LIỆU:
+- BẮT BUỘC đối chiếu các bộ sao, thế đứng của cung với DỮ LIỆU SÁCH CONTEXT được cung cấp dưới đây.
+- Khi đưa ra lập luận hoặc câu phú, hãy bổ sung chú thích trích dẫn dạng: `[Tham khảo: <Tên sách/Tên câu phú>]` hoặc `[Trích tài liệu: <Tên tài liệu>]`.
+- Ở CUỐI BÀI LUẬN, tạo riêng một mục: "📖 BẢNG TỔNG HỢP CÁC TÀI LIỆU SÁCH / PHÚ TỬ VI ĐÃ THAM KHẢO" để liệt kê lại toàn bộ các câu phú và sách đã trích dẫn trong bài.
 [RULE - LUẬN PHỤ TINH & SÁT TINH]:
 Mỗi phụ tinh/sát tinh xuất hiện BẮT BUỘC phải có 1 dòng phân tích riêng theo công thức: [Tên Sao] + [Đắc/Hãm] + [Tương tác Cung/Chính tinh] -> [Hành vi/Tai họa/Cát lành cụ thể].
 
@@ -410,6 +438,15 @@ BƯỚC 6: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
 
         if st.session_state.analysis_result:
             st.markdown(st.session_state.analysis_result)
+
+            with st.expander("📖 Xem Kho Dữ Liệu Nguồn Được Trích Xuất"):
+                st.caption(
+                    "Nội dung kho sách `books_cache.json` đang nạp cho Gemini:"
+                )
+                st.code(
+                    load_cached_data()[:2000] + "\n... [Xem thêm tại Tab Kho Dữ Liệu]",
+                    language="json",
+                )
         else:
             st.info(
                 "👈 Nhấn nút **'BẮT ĐẦU LUẬN GIẢI'** ở cột bên trái để xuất kết"
@@ -417,13 +454,40 @@ BƯỚC 6: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
             )
 
 # ==========================================
-# TAB 2: QUẢN LÝ KHO SÁCH (CHỈ HIỂN THỊ DUNG LƯỢNG)
+# TAB 2: QUẢN LÝ KHO SÁCH & TRÍCH DẪN
 # ==========================================
 with tab_books:
-    st.subheader("📚 Kho Dữ Liệu Sách Tử Vi (Lưu Trữ Cố Định)")
+    st.subheader("📚 Kho Dữ Liệu Sách & Phú Tử Vi (JSON Cache)")
     pdf_text_context = load_cached_data()
-    st.info(f"📍 **File dữ liệu:** `{CACHE_FILE.name}`")
-    st.metric(
-        "Tổng dung lượng kho sách đang sử dụng",
-        f"{len(pdf_text_context):,} ký tự",
-    )
+    st.info(f"📍 **File dữ liệu lưu trữ:** `{CACHE_FILE.name}`")
+
+    col_m1, col_m2 = st.columns([1, 1])
+
+    with col_m1:
+        st.metric(
+            "Tổng dung lượng kho sách đang sử dụng",
+            f"{len(pdf_text_context):,} ký tự",
+        )
+
+    with col_m2:
+        book_titles = get_book_list_info()
+        st.metric("Tổng số mục / Tác phẩm", f"{len(book_titles)} mục")
+
+    st.markdown("---")
+    st.subheader("📑 Danh Sách Các Tài Liệu Đang Có Trong Kho JSON:")
+
+    if book_titles:
+        for title in book_titles:
+            st.markdown(f"- **{title}**")
+    else:
+        st.caption(
+            "Chưa phát hiện danh sách tên cụ thể hoặc file JSON đang lưu ở dạng"
+            " mảng chuỗi văn bản thuần."
+        )
+
+    with st.expander("📄 Xem toàn bộ dữ liệu thô (Raw JSON / Text)"):
+        st.text_area(
+            "Nội dung file books_cache.json:",
+            value=pdf_text_context,
+            height=400,
+        )
