@@ -167,8 +167,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="sub-header">Hệ thống luận giải thông minh ứng dụng AI Gemini'
-    " 2.5</div>",
+    '<div class="sub-header">Hệ thống luận giải thông minh ứng dụng AI </div>",
     unsafe_allow_html=True,
 )
 
