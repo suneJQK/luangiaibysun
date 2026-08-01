@@ -264,19 +264,13 @@ with st.sidebar:
     else:
         st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
 
-    # --- MỤC LINK HỖ TRỢ ---
-    st.markdown("---")
-    st.subheader("🔗 Liên Hệ & Hỗ Trợ")
-    
-    github_link = f"https://github.com/{GITHUB_REPO}" if GITHUB_REPO else "https://github.com"
-    
-    st.markdown(f"- 🐙 [GitHub Repository]({github_link})")
-    st.markdown("- 📘 [Hướng dẫn sử dụng](https://github.com)")
-    st.markdown("- 💬 [Kênh Hỗ Trợ / Feedback](https://t.me)")
-
-# --- DANH SÁCH TAB CHÍNH ---
-tab_main, tab_books = st.tabs(
-    ["🔮 Luận Giải Lá Số", "📚 Kho Dữ Liệu Sách & Trích Dẫn"]
+# --- DANH SÁCH TAB CHÍNH (ĐÃ THÊM TAB 3) ---
+tab_main, tab_books, tab_contact = st.tabs(
+    [
+        "🔮 Luận Giải Lá Số",
+        "📚 Kho Dữ Liệu Sách & Trích Dẫn",
+        "🔗 Liên Hệ & Hỗ Trợ",
+    ]
 )
 
 # ==========================================
@@ -451,7 +445,7 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                         content_payload.append(prompt)
 
                         response = client.models.generate_content(
-                            model="gemini-2.5-flash", contents=content_payload
+                            model="gemini-3.6-flash", contents=content_payload
                         )
 
                         if response:
@@ -502,3 +496,39 @@ with tab_books:
             "Chưa phát hiện danh sách tên cụ thể hoặc file JSON đang lưu ở dạng"
             " mảng chuỗi văn bản thuần."
         )
+
+# ==========================================
+# TAB 3: LIÊN HỆ & HỖ TRỢ (MỚI CHUYỂN SANG)
+# ==========================================
+with tab_contact:
+    st.subheader("🔗 Thông Tin Liên Hệ & Kênh Hỗ Trợ")
+    st.write(
+        "Mọi góp ý, báo lỗi hoặc yêu cầu hỗ trợ kỹ thuật xin vui lòng truy cập các"
+        " liên kết bên dưới:"
+    )
+
+    col_c1, col_c2 = st.columns(2)
+
+    with col_c1:
+        github_link = (
+            f"https://github.com/{GITHUB_REPO}"
+            if GITHUB_REPO
+            else "https://github.com"
+        )
+        st.info("### 🐙 Kho Mã Nguồn GitHub")
+        st.write("Xem mã nguồn, đóng góp tính năng hoặc gửi Issue báo lỗi.")
+        st.markdown(f"👉 [Truy cập GitHub Repository]({github_link})")
+
+    with col_c2:
+        st.success("### 💬 Kênh Hỗ Trợ & Feedback")
+        st.write("Tham gia cộng đồng trao đổi và hỗ trợ sử dụng hệ thống.")
+        st.markdown("👉 [Kênh Telegram Hỗ Trợ](https://t.me)")
+
+    st.markdown("---")
+    st.subheader("📖 Hướng Dẫn Sử Dụng Nhanh")
+    st.markdown("""
+    1. **Tải lá số**: Chọn file ảnh lá số Tử Vi ở **Tab Luận Giải Lá Số**.
+    2. **Căn chỉnh**: Sử dụng thanh trượt để loại bỏ lề dư thừa nếu cần.
+    3. **Chọn năm**: Đặt năm cần xem Tiểu Hạn ở Sidebar bên trái.
+    4. **Bắt đầu**: Bấm nút **BẮT ĐẦU LUẬN GIẢI** và chờ AI phân tích kết quả.
+    """)
