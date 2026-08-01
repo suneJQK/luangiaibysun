@@ -11,7 +11,7 @@ from google import genai
 from PIL import Image
 import streamlit as st
 
-# --- CẤU HÌNH TRANG (ĐẢM BẢO SIDEBAR MẶC ĐỊNH MỞ) ---
+# --- CẤU HÌNH TRANG ---
 st.set_page_config(
     page_title="Tử Vi Đẩu Số - Luận Giải & Cách Cục",
     page_icon="☯️",
@@ -19,14 +19,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN (SỬA LỖI ẨN SIDEBAR CỦA CSS) ---
+# --- TUỲ CHỈNH GIAO DIỆN (ĐÃ GIỮ LẠI NÚT 3 GẠCH SIDEBAR) ---
 st.markdown(
     """
     <style>
-    /* 1. Sửa lỗi CSS: Chỉ ẩn nút Share/Toolbar/Footer, KHÔNG ẩn nút toggle Sidebar */
-    [data-testid="stHeader"] {
-        background-color: transparent !important;
-    }
+    /* 1. Chỉ ẩn Footer và Toolbar dịch vụ, GIỮ NGUYÊN Header để nút 3 gạch không bị mất */
     div[data-testid="stToolbar"] {
         visibility: hidden;
     }
@@ -229,6 +226,14 @@ with st.sidebar:
         height=120,
     )
 
+    # NÚT BẤM RIÊNG TẠI SIDEBAR
+    btn_sidebar_analyze = st.button(
+        "🔮 BẮT ĐẦU LUẬN GIẢI",
+        type="primary",
+        key="btn_sidebar",
+        use_container_width=True,
+    )
+
     st.markdown("---")
     st.subheader("🔌 Trạng Thái Kết Nối")
 
@@ -242,7 +247,7 @@ with st.sidebar:
     else:
         st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
 
-    # --- MỤC LINK HỖ TRỢ (HIỂN THỊ 3 GẠCH RÕ RÀNG) ---
+    # --- MỤC LINK HỖ TRỢ ---
     st.markdown("---")
     st.subheader("🔗 Liên Hệ & Hỗ Trợ")
     
@@ -308,8 +313,11 @@ with tab_main:
                         use_container_width=True,
                     )
 
-        btn_analyze = st.button(
-            "🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", use_container_width=True
+        btn_main_analyze = st.button(
+            "🔮 BẮT ĐẦU LUẬN GIẢI",
+            type="primary",
+            key="btn_main",
+            use_container_width=True,
         )
 
     with col_output:
@@ -318,7 +326,7 @@ with tab_main:
         if "analysis_result" not in st.session_state:
             st.session_state.analysis_result = None
 
-        if btn_analyze:
+        if btn_sidebar_analyze or btn_main_analyze:
             if not uploaded_file:
                 st.warning("⚠️ Vui lòng tải lên ảnh lá số trước!")
             elif not API_KEY:
@@ -442,8 +450,8 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
             st.markdown(st.session_state.analysis_result)
         else:
             st.info(
-                "👈 Nhấn nút **'BẮT ĐẦU LUẬN GIẢI'** ở cột bên trái để xuất kết"
-                " quả tại đây."
+                "👈 Nhấn nút **'BẮT ĐẦU LUẬN GIẢI'** ở Sidebar hoặc giao diện chính"
+                " để xuất kết quả tại đây."
             )
 
 # ==========================================
