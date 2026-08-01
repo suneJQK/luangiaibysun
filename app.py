@@ -20,12 +20,26 @@ st.set_page_config(
 )
 
 # --- TUỲ CHỈNH GIAO DIỆN (CUSTOM CSS) ---
+# Ẩn hoàn toàn thanh Header của Streamlit Cloud (bao gồm icon GitHub, Share, Menu)
+# --- TUỲ CHỈNH GIAO DIỆN (CUSTOM CSS) ---
 st.markdown(
     """
     <style>
+    /* 1. Ẩn thanh Header & Footer của Streamlit Cloud (Gồm icon GitHub, Share, Menu) */
+    header[data-testid="stHeader"] {
+        visibility: hidden;
+        height: 0px;
+    }
+    footer {
+        visibility: hidden;
+    }
+
+    /* 2. Màu nền trang web */
     .stApp {
         background-color: #0e1117;
     }
+
+    /* 3. Kiểu dáng Tiêu đề chính & Tiêu đề phụ */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -40,11 +54,15 @@ st.markdown(
         text-align: center;
         margin-bottom: 2rem;
     }
+
+    /* 4. Tùy chỉnh khung Expander */
     div[data-testid="stExpander"] {
         background-color: #1a202c;
         border-radius: 10px;
         border: 1px solid #2d3748;
     }
+
+    /* 5. Tùy chỉnh Nút bấm Nổi bật (Primary Button) */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #d4af37 0%, #f6d365 100%);
         color: #1a202c;
