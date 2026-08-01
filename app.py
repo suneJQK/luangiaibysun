@@ -510,19 +510,9 @@ with tab_contact:
     col_c1, col_c2 = st.columns(2)
 
     with col_c1:
-        github_link = (
-            f"https://github.com/{GITHUB_REPO}"
-            if GITHUB_REPO
-            else "https://github.com"
-        )
-        st.info("### 🐙 Kho Mã Nguồn GitHub")
-        st.write("Xem mã nguồn, đóng góp tính năng hoặc gửi Issue báo lỗi.")
-        st.markdown(f"👉 [Truy cập GitHub Repository]({github_link})")
-
-    with col_c2:
         st.success("### 💬 Kênh Hỗ Trợ & Feedback")
-        st.write("Tham gia cộng đồng trao đổi và hỗ trợ sử dụng hệ thống.")
-        st.markdown("👉 [Kênh Telegram Hỗ Trợ](https://t.me)")
+        st.write("đóng góp tính năng hoặc gửi Issue báo lỗi.")
+        st.markdown("👉 [Kênh Hỗ Trợ](https://www.tiktok.com/@tieuyet11)")
 
     st.markdown("---")
     st.subheader("📖 Hướng Dẫn Sử Dụng Nhanh")
