@@ -23,7 +23,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* 1. Ẩn thanh Header & Footer của Streamlit Cloud (Gồm icon GitHub, Share, Menu) */
+    /* 1. Ẩn thanh Header & Footer của Streamlit Cloud */
     header[data-testid="stHeader"] {
         visibility: hidden;
         height: 0px;
@@ -240,6 +240,16 @@ with st.sidebar:
     else:
         st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
 
+    # --- MỤC LINK HỖ TRỢ (HIỂN THỊ 3 GẠCH RÕ RÀNG) ---
+    st.markdown("---")
+    st.subheader("🔗 Liên Hệ & Hỗ Trợ")
+    
+    github_link = f"https://github.com/{GITHUB_REPO}" if GITHUB_REPO else "https://github.com"
+    
+    st.markdown(f"- 🐙 [GitHub Repository]({github_link})")
+    st.markdown("- 📘 [Hướng dẫn sử dụng](https://github.com)")
+    st.markdown("- 💬 [Kênh Hỗ Trợ / Feedback](https://t.me)")
+
 # --- DANH SÁCH TAB CHÍNH ---
 tab_main, tab_books = st.tabs(
     ["🔮 Luận Giải Lá Số", "📚 Kho Dữ Liệu Sách & Trích Dẫn"]
@@ -264,9 +274,7 @@ with tab_main:
                 with st.spinner("🐙 Đang tải lá số ..."):
                     gh_success, gh_msg = upload_to_github(uploaded_file)
                     if gh_success:
-                        st.toast(
-                            "🐙 Đã lưu lá số !", icon="✅"
-                        )
+                        st.toast("🐙 Đã lưu lá số !", icon="✅")
                     else:
                         st.caption(f"⚠️ Lưu GitHub thất bại: {gh_msg}")
                 st.session_state.last_uploaded = uploaded_file.name
@@ -415,7 +423,6 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                             content_payload.append(crop_img)
                         content_payload.append(prompt)
 
-                        # Sử dụng mô hình gemini-2.5-flash
                         response = client.models.generate_content(
                             model="gemini-3.6-flash", contents=content_payload
                         )
@@ -431,15 +438,6 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
 
         if st.session_state.analysis_result:
             st.markdown(st.session_state.analysis_result)
-
-            with st.expander("📖 Xem Kho Dữ Liệu Nguồn Được Trích Xuất"):
-                st.caption(
-                    "Nội dung kho sách `books_cache.json` đang nạp cho Gemini:"
-                )
-                st.code(
-                    load_cached_data()[:2000] + "\n... [Xem thêm tại Tab Kho Dữ Liệu]",
-                    language="json",
-                )
         else:
             st.info(
                 "👈 Nhấn nút **'BẮT ĐẦU LUẬN GIẢI'** ở cột bên trái để xuất kết"
@@ -476,11 +474,4 @@ with tab_books:
         st.caption(
             "Chưa phát hiện danh sách tên cụ thể hoặc file JSON đang lưu ở dạng"
             " mảng chuỗi văn bản thuần."
-        )
-
-    with st.expander("📄 Xem toàn bộ dữ liệu thô (Raw JSON / Text)"):
-        st.text_area(
-            "Nội dung file books_cache.json:",
-            value=pdf_text_context,
-            height=400,
         )
