@@ -13,14 +13,12 @@ import streamlit as st
 
 # --- CẤU HÌNH TRANG ---
 st.set_page_config(
-    page_title="Tử Vi Đẩu Số - Luận Giải",
+    page_title="Tử Vi Đẩu Số - Luận Giải & Cách Cục",
     page_icon="☯️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN (CUSTOM CSS) ---
-# Ẩn hoàn toàn thanh Header của Streamlit Cloud (bao gồm icon GitHub, Share, Menu)
 # --- TUỲ CHỈNH GIAO DIỆN (CUSTOM CSS) ---
 st.markdown(
     """
@@ -206,8 +204,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown(
-    '<div class="sub-header">Hệ thống luận giải thông minh'
-    "</div>",
+    '<div class="sub-header">Hệ thống luận giải thông minh tích hợp Luận Cách Cục & Tam Hợp</div>',
     unsafe_allow_html=True,
 )
 
@@ -224,8 +221,8 @@ with st.sidebar:
     user_note = st.text_area(
         "📝 Ghi chú / Yêu cầu thêm:",
         value=(
-            "Yêu cầu AI phân tích chi tiết, minh bạch quy tắc và không bỏ sót bất"
-            " kỳ cung hay tháng nào."
+            "Yêu cầu AI phân tích chi tiết Cách Cục (Thành cách/Pha cách), Tam Hợp chiếu,"
+            " minh bạch quy tắc và không bỏ sót bất kỳ cung hay tháng nào."
         ),
         height=120,
     )
@@ -316,12 +313,11 @@ with tab_main:
                 st.warning("⚠️ Vui lòng tải lên ảnh lá số trước!")
             elif not API_KEY:
                 st.error(
-                    "❌ Chưa phát hiện Gemini API Key! Vui lòng cấu hình"
-                    " Secrets."
+                    "❌ Chưa phát hiện Gemini API Key! Vui lòng cấu hình Secrets."
                 )
             else:
                 with st.spinner(
-                    "⚡ AI đang đối chiếu Kho Sách & Phân Tích ..."
+                    "⚡ AI đang phân tích Cách Cục, Tam Hợp & Đánh giá Kho Sách..."
                 ):
                     pdf_text_context = load_cached_data()
                     truncated_context = (
@@ -330,101 +326,79 @@ with tab_main:
                         else "Sử dụng kiến thức Tử Vi Nam Phái, Bắc Phái, Trung Châu Phái."
                     )
 
-                    # PROMPT CHUẨN XÁC NGUYÊN BẢN THEO YÊU CẦU CỦA BẠN
+                    # PROMPT TÍCH HỢP ĐẦY ĐỦ BƯỚC LUẬN CÁCH CỤC
                     prompt = f"""
 Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu (kết hợp kiến thức Nam Phái, Bắc Phái và Trung Châu Phái). Nhiệm vụ của bạn là đọc hiểu lá số và thực hiện một bản luận giải CỰC KỲ CHI TIẾT.
 
-BẮT BUỘC tuân thủ NGHIÊM NGẶT Quy trình 6 bước dưới đây. Tại mỗi bước, bạn phải áp dụng đúng Quy tắc phân tích được giao phó. KHÔNG ĐƯỢC làm tắt, KHÔNG ĐƯỢC bỏ sót bất kỳ cung hay tháng nào.
+BẮT BUỘC tuân thủ NGHIÊM NGẶT Quy trình luận giải dưới đây. Tại mỗi bước, bạn phải áp dụng đúng Quy tắc phân tích được giao phó. KHÔNG ĐƯỢC làm tắt, KHÔNG ĐƯỢC bỏ sót bất kỳ cung hay tháng nào.
 
 ====================================================================
-MA TRẬN LUẬN GIẢI: QUY TRÌNH TÍCH HỢP QUY TẮC
+MA TRẬN LUẬN GIẢI: TÍCH HỢP QUY TẮC CÁCH CỤC & TAM HỢP
 ====================================================================
 YÊU CẦU ĐẶC BIỆT VỀ TRÍCH DẪN & THAM KHẢO TÀI LIỆU:
 - BẮT BUỘC đối chiếu các bộ sao, thế đứng của cung với DỮ LIỆU SÁCH CONTEXT được cung cấp dưới đây.
 - Khi đưa ra lập luận hoặc câu phú, hãy bổ sung chú thích trích dẫn dạng: `[Tham khảo: <Tên sách/Tên câu phú>]` hoặc `[Trích tài liệu: <Tên tài liệu>]`.
 - Ở CUỐI BÀI LUẬN, tạo riêng một mục: "📖 BẢNG TỔNG HỢP CÁC TÀI LIỆU SÁCH / PHÚ TỬ VI ĐÃ THAM KHẢO" để liệt kê lại toàn bộ các câu phú và sách đã trích dẫn trong bài.
+
 [RULE - LUẬN PHỤ TINH & SÁT TINH]:
-Mỗi phụ tinh/sát tinh xuất hiện BẮT BUỘC phải có 1 dòng phân tích riêng theo công thức: [Tên Sao] + [Đắc/Hãm] + [Tương tác Cung/Chính tinh] -> [Hành vi/Tai họa/Cát lành cụ thể].
+Mỗi phụ tinh/sát tinh xuất hiện BẮT BUỘC phải có 1 dòng phân tích riêng theo công thức: [Tên Sao] + [Đắc/Hãm] + [Tương tác Cung/Chính tinh/Sao chiếu] -> [Hành vi/Tai họa/Cát lành cụ thể].
 
-Không được gộp chung kiểu: "Các sao A, B, C giúp giải trừ bệnh tật..." mà phải tách rõ:
-- Sao A làm gì?
-- Sao B gây ra rắc rối gì cụ thể? (Ví dụ: Hỏa Hãm = nóng nảy, thần kinh; Diêu Hãm = thị phi tình cảm, nghiện ngập).
-
-Nếu có sự xuất hiện của các Bộ Sao Đi Kèm (Ví dụ: Đào + Diêu, Hỏa + Linh, Lộc + Mã...), BẮT BUỘC phải chỉ ra phản ứng hóa học giữa bộ sao đó.
-
+---
 BƯỚC 1: GIẢI MÃ NỀN TẢNG MỆNH BÀN (TỔNG QUAN CUỘC ĐỜI)
 [Quy tắc áp dụng]: 
 - Xét Âm Dương Nghịch/Thuận Lý (Can Chi năm sinh vs Giới tính).
-- Xét Sinh Khắc Mệnh - Cục (Ví dụ: Mệnh sinh Cục, Cục khắc Mệnh...).
-- Đánh giá sự đắc vị của Mệnh Chủ, Thân Chủ và vị trí Cung Thân (Thân cư Mệnh, Thân cư Thê, Thân cư Quan, Thân cư Tài, Thân cư Di, Thân cư Phúc).
-[Yêu cầu Đầu ra Bước 1]: 
-- Viết tóm tắt về "Căn cơ bẩm sinh" và "Nghịch cảnh/Thuận lợi cốt lõi" của đương số dựa trên các quy tắc trên. Đánh giá vị trí Cung Thân (xu hướng vãn niên).
+- Xét Sinh Khắc Mệnh - Cục.
+- Đánh giá vị trí Mệnh Chủ, Thân Chủ và vị trí Cung Thân (Thân cư Mệnh, Thân cư Thê, Thân cư Quan, Thân cư Tài, Thân cư Di, Thân cư Phúc).
 
 ---
-BƯỚC 2: MÔ PHỎNG CHI TIẾT 12 CUNG CỐ ĐỊNH (YÊU CẦU ĐỘ DÀI & ĐỘ SÂU ĐỒNG ĐỀU 100%)
+BƯỚC 2: PHÂN TÍCH CÁCH CỤC LÁ SỐ & THẾ TAM HỢP (TRỌNG TÂM MỚI)
+[Quy tắc áp dụng]:
+1. Nhận diện Cách Cục Chính của Mệnh - Tài - Quan:
+   - Xác định bộ chính tinh chủ đạo: Tử Phủ Vũ Tướng Liêm, Cự Nhật, Cơ Cự Đồng Lương, Sát Phá Tham, hay Nhật Nguyệt...
+   - Phân tích tên gọi Cách Cục cụ thể (Ví dụ: Cự Nhật Mão Dần, Tử Phủ Đồng Cung, Thất Sát Triều Đẩu, Tham Vũ Đồng Hành, Cự Cơ Mão Dậu...).
+2. Phân tích Đỉnh Cao Cách Cục (Thành Cách hay Pha Cách):
+   - **Thành Cách:** Đạt được nhờ hội các Cát tinh/Quyền tinh nào? (Khôi Việt, Tả Hữu, Xương Khúc, Lộc Tồn, Tứ Hóa...).
+   - **Pha Cách / Chiết Giảm:** Bị tổn hại, suy giảm uy lực bởi các Sát tinh/Bại tinh nào? (Kình Đà, Hỏa Linh, Không Kiếp, Kỵ, Hình...).
+3. Phân tích Bộ Tam Hợp (Hợi-Mão-Mùi, Dần-Ngọ-Tuất, Tị-Dậu-Sửu, Thân-Tý-Thìn):
+   - Đương số thuộc Tam Hợp nào? Ngũ hành Tam Hợp tương sinh, tương hòa hay tương khắc với Ngũ Hành Bản Mệnh?
+   - Đánh giá lực chiếu của các Sao Xung Chiếu và Tam Hợp Chiếu lên Mệnh/Thân.
+
+---
+BƯỚC 3: MÔ PHỎNG CHI TIẾT 12 CUNG CỐ ĐỊNH (YÊU CẦU ĐỘ DÀI & ĐỘ SÂU ĐỒNG ĐỀU 100%)
 
 ⚠️ CẢNH BÁO CẤP CAO DÀNH CHO AI: 
 - KHÔNG ĐƯỢC tập trung viết dài Cung Mệnh rồi viết ngắn/tóm tắt các cung khác!
-- TẤT CẢ 12 CUNG phải được phân tích theo đúng TIÊU CHUẨN CẤU TRÚC 5 MỤC DƯỚI ĐÂY. 
-- Mức độ chi tiết, số lượng từ và độ sâu phân tích của Cung Phụ Mẫu, Phúc Đức, Điền Trạch... BẮT BUỘC PHẢI TƯƠNG ĐƯƠNG Cung Mệnh.
+- TẤT CẢ 12 CUNG phải được phân tích theo đúng TIÊU CHUẨN CẤU TRÚC 5 MỤC DƯỚI ĐÂY.
 
 TRÌNH TỰ BẮT BUỘC KHUÔN MẪU TỪNG CUNG (Áp dụng lần lượt cho cả 12 Cung):
-
 MỖI CUNG PHẢI TRÌNH BÀY ĐỦ 5 MỤC NÀY:
-1. [Tên Cung] - Cấu Trúc Tinh Hệ & Ngũ Hành:
-   - Tọa thủ: Liệt kê Chính tinh (Đắc/Miếu/Vượng/Hãm) và Phụ tinh tại bản cung.
-   - Xung chiếu: Các sao từ cung đối diện chiếu về.
-   - Tam hợp: Các sao từ 2 cung trong tam hợp chiếu về.
-   - Giáp cung: Các sao ở 2 cung kề bên (Giáp Kình Đà, Giáp Lộc, Giáp Hóa...).
+1. [Tên Cung] - Cấu Trúc Tinh Hệ, Ngũ Hành & Thế Tam Hợp:
+   - Tọa thủ: Liệt kê Chính tinh (Đắc/Miếu/Vượng/Hãm) và TOÀN BỘ Phụ tinh tại bản cung.
+   - Thế Tam Hợp & Sao Chiếu: Xác định cung thuộc Bộ Tam Hợp nào, các sao từ Cung Xung Chiếu và 2 Cung Tam Hợp chiếu về.
+   - Giáp cung: Các sao ở 2 cung kề bên.
    - Đánh giá Ảnh hưởng Tuần/Triệt (nếu có).
-2. Phân Tích Bản Chất & Tính Cách / Diện Mạo (Liên quan đến cung đó):
-   - Luận giải chi tiết ý nghĩa các Bộ sao tọa thủ và chiếu.
-   - Nêu rõ ưu điểm cốt lõi và nhược điểm tiềm ẩn.
-3. Luận Giải Cát - Hung & Họa Phúc Thực Tế:
-   - Tương tác Cát tinh (Xương Khúc, Tả Hữu, Khôi Việt, Lộc Tồn...): Mang lại thuận lợi, cơ hội gì?
-   - Tương tác Sát/Bại tinh (Kình Đà, Hỏa Linh, Không Kiếp, Hao, Hình, Kỵ...): Gây ra rủi ro, tổn thất, áp lực hay tai họa gì?
-4. Tương Quan Ngũ Hành Bản Mệnh với Ngũ Hành Cung:
-   - So sánh Ngũ Hành của Mệnh đương số với Ngũ Hành Địa Chi của Cung đang luận (Tương sinh, Tương trợ hay Tương khắc). 
-   - Đánh giá đương số gánh vác, hưởng lợi hay chịu gánh nặng từ cung này.
-5. Đánh Giá Tổng Kết & Lời Khuyên Ứng Xử:
-   - Chấm điểm tiềm năng/độ thuận lợi của cung (Thang điểm 10 hoặc đánh giá Đắc địa / Bình hòa / Hung hiểm).
-   - Đưa ra 1-2 lời khuyên chiến lược giúp phát huy điểm tốt hoặc né tránh rủi ro.
+2. Phân Tích Bản Chất & Tính Cách / Diện Mạo.
+3. Luận Giải Chi Tiết Từng Phụ Tinh & Cát - Hung Thực Tế (KHÔNG BỎ SÓT PHỤ TINH).
+4. Tương Quan Ngũ Hành Bản Mệnh với Ngũ Hành Cung & Hành Tam Hợp.
+5. Đánh Giá Tổng Kết & Lời Khuyên Ứng Xử.
 
-DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ (Viết chi tiết chuẩn 5 mục trên cho từng cung):
+DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ:
 1. Cung Mệnh | 2. Cung Phụ Mẫu | 3. Cung Phúc Đức | 4. Cung Điền Trạch | 5. Cung Quan Lộc | 6. Cung Nô Bộc | 7. Cung Thiên Di | 8. Cung Tật Ách | 9. Cung Tài Bạch | 10. Cung Tử Tức | 11. Cung Phu Thê | 12. Cung Huynh Đệ
 
 ---
-BƯỚC 3: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
-[Quy tắc áp dụng]: 
-- Xét Thiên Thời (Hành của Đại Vận so với Hành Bản Mệnh).
-- Xét Địa Lợi (Vị trí cung Đại Vận nằm ở vòng Thái Tuế nào: Thái Tuế, Tuế Phá, Tang Môn...).
-- Xét Nhân Hòa (Các sao tụ hội tại cung Đại Vận).
-[Yêu cầu Đầu ra Bước 3]: 
-- Đánh giá tổng quan 10 năm này là Hưng Thịnh, Tích Lũy, Trì Trệ hay Thử Thách. Chấm điểm Đại Vận (trên thang 5 sao ★★★★★).
+BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
+- Xét Thiên Thời, Địa Lợi, Nhân Hòa và Chấm điểm Đại Vận (thang 5 sao ★★★★★).
 
 ---
-BƯỚC 4: LUẬN TIỂU HẠN & LƯU TỨ HÓA NĂM {selected_year} (TRỌNG TÂM)
-[Quy tắc áp dụng]:
-- Xác định Thiên Can năm {selected_year} để an Lưu Tứ Hóa (L.Lộc, L.Quyền, L.Khoa, L.Kỵ) vào các Chính tinh tương ứng trên lá số.
-- Xét Tương tác bản cung: L.Hóa Lộc mang lại cơ hội ở cung nào? L.Hóa Kỵ gây thắt nút, thị phi ở cung nào?
-- Quét các sao Lưu động: L.Thái Tuế, L.Kình Đà, L.Tang Hổ nhập vào cung nào, kích hoạt hung/cát gì với sao Cố định?
-[Yêu cầu Đầu ra Bước 4]: 
-- Trình bày rõ: Năm {selected_year}, năng lượng Hóa Lộc, Quyền, Khoa, Kỵ rơi vào các sao nào, cung nào. 
-- Chỉ ra 3 sự kiện LỚN NHẤT có khả năng xảy ra trong năm nay.
+BƯỚC 5: LUẬN TIỂU HẠN & LƯU TỨ HÓA NĂM {selected_year} (TRỌNG TÂM)
+- Năng lượng Hóa Lộc, Quyền, Khoa, Kỵ rơi vào các sao nào, cung nào. 3 sự kiện LỚN NHẤT năm.
 
 ---
-BƯỚC 5: LẬP TRÌNH VẬN HẠN 12 THÁNG ÂM LỊCH NĂM {selected_year}
-[Quy tắc áp dụng]: 
-- Dịch chuyển điểm nhìn theo từng tháng Âm lịch. Áp dụng quy tắc Tam Phương Tứ Chính tại cung của tháng đó.
-- Đặc biệt chú ý các tháng có L.Hóa Kỵ, L.Thái Tuế hoặc Sát Tinh tụ hội.
-[Yêu cầu Đầu ra Bước 5]: 
-- Bắt buộc liệt kê đủ 12 tháng (Từ Tháng 1 đến Tháng 12 Âm lịch). Mỗi tháng viết 1 đoạn ngắn gọn nhưng sắc bén về: Tiền bạc, Công việc, Sức khỏe/Gia đạo. Đánh dấu (Cát), (Hung), hoặc (Bình) cho từng tháng.
+BƯỚC 6: LẬP TRÌNH VẬN HẠN 12 THÁNG ÂM LỊCH NĂM {selected_year}
+- Bắt buộc đủ 12 tháng (Tháng 1 đến Tháng 12 Âm lịch).
 
 ---
-BƯỚC 6: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
-[Quy tắc áp dụng]: Đạo lý "Đức năng thắng số" và nguyên lý cân bằng Ngũ Hành.
-[Yêu cầu Đầu ra Bước 6]: 
-- Đưa ra 3 lời khuyên cốt lõi nhất để đương số tận dụng L.Hóa Lộc và hóa giải L.Hóa Kỵ trong năm {selected_year}.
+BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
 
 --------------------------------------------------------------------
 📖 DỮ LIỆU SÁCH / PHÚ TỬ VI TRÍCH XUẤT (PDF CONTEXT):
@@ -441,6 +415,7 @@ BƯỚC 6: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                             content_payload.append(crop_img)
                         content_payload.append(prompt)
 
+                        # Sử dụng mô hình gemini-2.5-flash
                         response = client.models.generate_content(
                             model="gemini-3.6-flash", contents=content_payload
                         )
@@ -448,7 +423,7 @@ BƯỚC 6: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                         if response:
                             st.session_state.analysis_result = response.text
                             st.success(
-                                f"✅ Đã phân tích xong lá số cho năm"
+                                f"✅ Đã phân tích xong lá số & Cách cục cho năm"
                                 f" {selected_year}!"
                             )
                     except Exception as e:
