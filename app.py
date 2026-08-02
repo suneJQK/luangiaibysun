@@ -23,51 +23,21 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* 1. ÉP HIỂN THỊ NÚT TOGGLE SIDEBAR TRÊN MỌI PHIÊN BẢN STREAMLIT */
+    /* 1. HIỂN THỊ NGUYÊN BẢN THANH HEADER & SIDEBAR TOGGLE */
     header[data-testid="stHeader"] {
-        background: transparent !important;
+        background-color: transparent !important;
         z-index: 99999 !important;
-        pointer-events: none !important;
     }
 
-    header[data-testid="stHeader"] * {
-        pointer-events: auto !important;
-    }
-
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="stSidebarCollapseButton"],
-    [data-testid="stHeaderIconButton"],
+    /* Đảm bảo nút Sidebar bật/tắt hiển thị rõ ràng với màu vàng kim */
     button[aria-label="Open sidebar"],
     button[aria-label="Close sidebar"],
-    button[data-testid="baseButton-header"] {
-        display: flex !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        z-index: 100000 !important;
-        background-color: #161b22 !important;
-        border: 1px solid #d4af37 !important;
-        border-radius: 8px !important;
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapseButton"] {
         color: #f6d365 !important;
-        margin: 5px !important;
     }
 
-    [data-testid="stSidebarCollapsedControl"] svg,
-    [data-testid="stSidebarCollapseButton"] svg,
-    button[aria-label="Open sidebar"] svg,
-    button[aria-label="Close sidebar"] svg {
-        fill: #f6d365 !important;
-        color: #f6d365 !important;
-        width: 24px !important;
-        height: 24px !important;
-    }
-
-    /* 2. ẨN FOOTER VÀ TOOLBAR MẶC ĐỊNH */
-    div[data-testid="stToolbar"], footer {
-        visibility: hidden !important;
-        height: 0px !important;
-    }
-
-    /* 3. MÀU NỀN TỔNG THỂ & SIDEBAR */
+    /* 2. MÀU NỀN TỔNG THỂ & SIDEBAR */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #0e1117 !important;
     }
@@ -76,7 +46,7 @@ st.markdown(
         background-color: #161b22 !important;
     }
 
-    /* 4. KIỂU DÁNG TIÊU ĐỀ & NÚT BẤM */
+    /* 3. KIỂU DÁNG TIÊU ĐỀ & NÚT BẤM */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -458,7 +428,7 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                         content_payload.append(prompt)
 
                         response = client.models.generate_content(
-                            model="gemini-2.5-flash", contents=content_payload
+                            model="gemini-3.6-flash", contents=content_payload
                         )
 
                         if response:
