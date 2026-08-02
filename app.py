@@ -227,12 +227,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- TAB CHÍNH ---
-tab_main, tab_books, tab_contact = st.tabs(
+# --- TAB CHÍNH (ĐÃ XÓA TAB LIÊN HỆỞ TRÊN) ---
+tab_main, tab_books = st.tabs(
     [
         "🔮 Luận Giải Lá Số",
         "📚 Kho Dữ Liệu Sách & Trích Dẫn",
-        "🔗 Liên Hệ & Hỗ Trợ",
     ]
 )
 
@@ -310,7 +309,7 @@ with tab_main:
 
         st.markdown("---")
 
-        # MỤC LIÊN HỆ & HỖ TRỢ (ĐÃ THAY THẾ CHO TRẠNG THÁI KẾT NỐI)
+        # MỤC LIÊN HỆ & HỖ TRỢ BÊN DƯỚI NÚT LUẬN GIẢI
         st.subheader("🔗 Liên Hệ & Hỗ Trợ")
         st.caption("Mọi góp ý, báo lỗi hoặc hỗ trợ vui lòng truy cập:")
         st.markdown(
@@ -430,7 +429,7 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                         content_payload.append(prompt)
 
                         response = client.models.generate_content(
-                            model="gemini-3.6-flash", contents=content_payload
+                            model="gemini-2.5-flash", contents=content_payload
                         )
 
                         if response:
@@ -475,27 +474,3 @@ with tab_books:
             st.markdown(f"- **{title}**")
     else:
         st.caption("Chưa phát hiện danh sách tên cụ thể.")
-
-# TAB 3: LIÊN HỆ
-with tab_contact:
-    st.subheader("🔗 Thông Tin Liên Hệ & Kênh Hỗ Trợ")
-    st.write(
-        "Mọi góp ý, báo lỗi hoặc yêu cầu hỗ trợ kỹ thuật xin vui lòng truy cập các"
-        " liên kết bên dưới:"
-    )
-
-    col_c1, col_c2 = st.columns(2)
-
-    with col_c1:
-        st.success("### 💬 Kênh Hỗ Trợ & Feedback")
-        st.write("Đóng góp tính năng hoặc gửi Issue báo lỗi.")
-        st.markdown("👉 [Kênh Hỗ Trợ TikTok](https://www.tiktok.com/@tieuyet11)")
-
-    st.markdown("---")
-    st.subheader("📖 Hướng Dẫn Sử Dụng Nhanh")
-    st.markdown("""
-    1. **Tải lá số**: Chọn file ảnh lá số Tử Vi ở **Tab Luận Giải Lá Số**.
-    2. **Căn chỉnh**: Sử dụng thanh trượt để loại bỏ lề dư thừa nếu cần.
-    3. **Chọn năm & Ghi chú**: Đặt năm cần xem và điền ghi chú ở cột bên trái ngay bên dưới ảnh.
-    4. **Bắt đầu**: Bấm nút **BẮT ĐẦU LUẬN GIẢI** và chờ AI phân tích kết quả.
-    """)
