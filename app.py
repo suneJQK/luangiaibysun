@@ -23,8 +23,11 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* 1. Hiển thị cưỡng chế nút Sidebar Toggle (nút 3 gạch) */
-    button[data-testid="stSidebarCollapseButton"],
+    /* 1. HIỂN THỊ CƯỠNG CHẾ NÚT TOGGLE SIDEBAR (GÓC TRÊN BÊN TRÁI) */
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="stSidebarCollapseButton"],
+    button[aria-label="Open sidebar"],
+    button[aria-label="Close sidebar"],
     button[data-testid="baseButton-header"],
     div[data-testid="stSidebarNav"] button,
     [data-testid="collapsedControl"] {
@@ -32,23 +35,33 @@ st.markdown(
         visibility: visible !important;
         opacity: 1 !important;
         z-index: 999999 !important;
+        color: #f6d365 !important;
     }
 
+    /* Đặt vị trí & định dạng khung viền cho nút bấm khi thu gọn Sidebar */
+    [data-testid="stSidebarCollapsedControl"],
     [data-testid="collapsedControl"] {
-        top: 0.5rem !important;
-        left: 0.5rem !important;
+        top: 0.6rem !important;
+        left: 0.6rem !important;
+        background-color: #161b22 !important;
+        border: 1px solid #d4af37 !important;
+        border-radius: 8px !important;
+        padding: 4px !important;
     }
 
-    /* 2. Ẩn Footer và Toolbar mặc định */
-    div[data-testid="stToolbar"], footer {
-        visibility: hidden;
-        height: 0%;
-    }
-
-    /* 3. Màu nền tổng thể & Sidebar */
-    .stApp, 
-    [data-testid="stAppViewContainer"],
+    /* 2. ĐỂ HEADER TRONG SUỐT VÀ ẨN FOOTER/TOOLBAR */
     [data-testid="stHeader"] {
+        background-color: transparent !important;
+        z-index: 99998 !important;
+    }
+
+    div[data-testid="stToolbar"], footer {
+        visibility: hidden !important;
+        height: 0px !important;
+    }
+
+    /* 3. MÀU NỀN TỔNG THỂ & SIDEBAR */
+    .stApp, [data-testid="stAppViewContainer"] {
         background-color: #0e1117 !important;
     }
 
@@ -56,7 +69,7 @@ st.markdown(
         background-color: #161b22 !important;
     }
 
-    /* 4. Kiểu dáng Tiêu đề */
+    /* 4. KIỂU DÁNG TIÊU ĐỀ & NÚT BẤM */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -72,14 +85,14 @@ st.markdown(
         margin-bottom: 2rem;
     }
 
-    /* 5. Tùy chỉnh Khung Expander */
+    /* Khung Expander */
     div[data-testid="stExpander"] {
         background-color: #1a202c;
         border-radius: 10px;
         border: 1px solid #2d3748;
     }
 
-    /* 6. Nút bấm Nổi bật (Primary Button) */
+    /* Nút bấm Nổi bật (Primary Button) */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #d4af37 0%, #f6d365 100%);
         color: #1a202c;
