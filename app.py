@@ -19,11 +19,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN & BẮT BUỘC HIỂN THỊ NÚT 3 GẠCH ---
+# --- TUỲ CHỈNH GIAO DIỆN & CẤU TRÚC CSS ---
 st.markdown(
     """
     <style>
-    /* 1. HIỂN THỊ CƯỠNG CHẾ NÚT 3 GẠCH (SIDEBAR TOGGLE BUTTON) */
+    /* 1. Hiển thị cưỡng chế nút Sidebar Toggle (nút 3 gạch) */
     button[data-testid="stSidebarCollapseButton"],
     button[data-testid="baseButton-header"],
     div[data-testid="stSidebarNav"] button,
@@ -34,39 +34,29 @@ st.markdown(
         z-index: 999999 !important;
     }
 
-    /* Giữ vị trí cố định cho nút 3 gạch */
     [data-testid="collapsedControl"] {
         top: 0.5rem !important;
         left: 0.5rem !important;
     }
 
-    /* 2. Ẩn Footer và Toolbar dịch vụ */
-    div[data-testid="stToolbar"] {
-        visibility: hidden;
-        height: 0%;
-    }
-    footer {
+    /* 2. Ẩn Footer và Toolbar mặc định */
+    div[data-testid="stToolbar"], footer {
         visibility: hidden;
         height: 0%;
     }
 
-    /* 3. MÀU NÊN TRANG WEB (Áp dụng cho container chính & nền tổng) */
+    /* 3. Màu nền tổng thể & Sidebar */
     .stApp, 
     [data-testid="stAppViewContainer"],
     [data-testid="stHeader"] {
         background-color: #0e1117 !important;
     }
 
-    /* Tùy chỉnh màu nền Sidebar cho đồng bộ (Nếu muốn) */
     [data-testid="stSidebar"] {
         background-color: #161b22 !important;
     }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
 
-    /* 4. Kiểu dáng Tiêu đề chính & Tiêu đề phụ */
+    /* 4. Kiểu dáng Tiêu đề */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -82,14 +72,14 @@ st.markdown(
         margin-bottom: 2rem;
     }
 
-    /* 5. Tùy chỉnh khung Expander */
+    /* 5. Tùy chỉnh Khung Expander */
     div[data-testid="stExpander"] {
         background-color: #1a202c;
         border-radius: 10px;
         border: 1px solid #2d3748;
     }
 
-    /* 6. Tùy chỉnh Nút bấm Nổi bật (Primary Button) */
+    /* 6. Nút bấm Nổi bật (Primary Button) */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #d4af37 0%, #f6d365 100%);
         color: #1a202c;
@@ -107,7 +97,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- LẤY SECRETS ---
+# --- LẤY SECRETS & CẤU HÌNH MẶC ĐỊNH ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", os.environ.get("GITHUB_REPO", ""))
@@ -218,10 +208,10 @@ def crop_12_cung_overlap(
 
     cropped_cungs = {}
     for cung_name, (col, row) in grid_map.items():
-        left = max(0, left_start + col * w_step - overlap_px)
-        top = max(0, top_start + row * h_step - overlap_px)
-        right = min(width, left_start + (col + 1) * w_step + overlap_px)
-        bottom = min(height, top_start + (row + 1) * h_step + overlap_px)
+        left = int(max(0, left_start + col * w_step - overlap_px))
+        top = int(max(0, top_start + row * h_step - overlap_px))
+        right = int(min(width, left_start + (col + 1) * w_step + overlap_px))
+        bottom = int(min(height, top_start + (row + 1) * h_step + overlap_px))
         cropped_cungs[cung_name] = img.crop((left, top, right, bottom))
 
     return cropped_cungs
@@ -246,7 +236,6 @@ with st.sidebar:
         "🗓️ Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1
     )
 
-    # VÙNG YÊU CẦU BỔ SUNG CỦA GIA CHỦ
     user_note = st.text_area(
         "📝 Ghi chú / Yêu cầu thêm:",
         value=(
@@ -256,7 +245,6 @@ with st.sidebar:
         height=120,
     )
 
-    # NÚT BẤM RIÊNG TẠI SIDEBAR
     btn_sidebar_analyze = st.button(
         "🔮 BẮT ĐẦU LUẬN GIẢI",
         type="primary",
@@ -277,7 +265,7 @@ with st.sidebar:
     else:
         st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
 
-# --- DANH SÁCH TAB CHÍNH (ĐÃ THÊM TAB 3) ---
+# --- DANH SÁCH TAB CHÍNH ---
 tab_main, tab_books, tab_contact = st.tabs(
     [
         "🔮 Luận Giải Lá Số",
@@ -300,7 +288,6 @@ with tab_main:
 
         cropped_dict = {}
         if uploaded_file:
-            # Tự động đẩy lên GitHub
             if st.session_state.get("last_uploaded") != uploaded_file.name:
                 with st.spinner("🐙 Đang tải lá số ..."):
                     gh_success, gh_msg = upload_to_github(uploaded_file)
@@ -312,7 +299,6 @@ with tab_main:
 
             image = Image.open(uploaded_file).convert("RGB")
 
-            # Căn chỉnh lề theo thông số mặc định (Top: 0, Bottom: 3, Side: 0, Overlap: 15)
             with st.expander("🛠️ Căn chỉnh lề & Vạch ngăn Tuần/Triệt", expanded=False):
                 top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
                 bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
@@ -368,7 +354,6 @@ with tab_main:
                         else "Sử dụng kiến thức Tử Vi Nam Phái, Bắc Phái, Trung Châu Phái."
                     )
 
-                    # PROMPT TÍCH HỢP ĐẦY ĐỦ BƯỚC LUẬN CÁCH CỤC
                     prompt = f"""
 Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu (kết hợp kiến thức Nam Phái, Bắc Phái và Trung Châu Phái). Nhiệm vụ của bạn là đọc hiểu lá số và thực hiện một bản luận giải CỰC KỲ CHI TIẾT.
 
@@ -393,7 +378,7 @@ BƯỚC 1: GIẢI MÃ NỀN TẢNG MỆNH BÀN (TỔNG QUAN CUỘC ĐỜI)
 - Đánh giá vị trí Mệnh Chủ, Thân Chủ và vị trí Cung Thân (Thân cư Mệnh, Thân cư Thê, Thân cư Quan, Thân cư Tài, Thân cư Di, Thân cư Phúc).
 
 ---
-BƯỚC 2: PHÂN TÍCH CÁCH CỤC LÁ SỐ & THẾ TAM HỢP (TRỌNG TÂM MỚI)
+BƯỚC 2: PHÂN TÍCH CÁCH CỤC LÁ SỐ & THẾ TAM HỢP
 [Quy tắc áp dụng]:
 1. Nhận diện Cách Cục Chính của Mệnh - Tài - Quan:
    - Xác định bộ chính tinh chủ đạo: Tử Phủ Vũ Tướng Liêm, Cự Nhật, Cơ Cự Đồng Lương, Sát Phá Tham, hay Nhật Nguyệt...
@@ -457,15 +442,15 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                             content_payload.append(crop_img)
                         content_payload.append(prompt)
 
+                        # Sử dụng tên model chuẩn của Google GenAI SDK
                         response = client.models.generate_content(
-                            model="gemini-3.6-flash", contents=content_payload
+                            model="gemini-2.5-flash", contents=content_payload
                         )
 
                         if response:
                             st.session_state.analysis_result = response.text
                             st.success(
-                                f"✅ Đã phân tích xong lá số & Cách cục cho năm"
-                                f" {selected_year}!"
+                                f"✅ Đã phân tích xong lá số & Cách cục cho năm {selected_year}!"
                             )
                     except Exception as e:
                         st.error(f"❌ Lỗi xử lý API: {e}")
@@ -511,7 +496,7 @@ with tab_books:
         )
 
 # ==========================================
-# TAB 3: LIÊN HỆ & HỖ TRỢ (MỚI CHUYỂN SANG)
+# TAB 3: LIÊN HỆ & HỖ TRỢ
 # ==========================================
 with tab_contact:
     st.subheader("🔗 Thông Tin Liên Hệ & Kênh Hỗ Trợ")
@@ -524,8 +509,8 @@ with tab_contact:
 
     with col_c1:
         st.success("### 💬 Kênh Hỗ Trợ & Feedback")
-        st.write("đóng góp tính năng hoặc gửi Issue báo lỗi.")
-        st.markdown("👉 [Kênh Hỗ Trợ](https://www.tiktok.com/@tieuyet11)")
+        st.write("Đóng góp tính năng hoặc gửi Issue báo lỗi.")
+        st.markdown("👉 [Kênh Hỗ Trợ TikTok](https://www.tiktok.com/@tieuyet11)")
 
     st.markdown("---")
     st.subheader("📖 Hướng Dẫn Sử Dụng Nhanh")
