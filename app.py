@@ -29,7 +29,6 @@ st.markdown(
         z-index: 99999 !important;
     }
 
-    /* Đảm bảo nút Sidebar bật/tắt hiển thị rõ ràng với màu vàng kim */
     button[aria-label="Open sidebar"],
     button[aria-label="Close sidebar"],
     [data-testid="stSidebarCollapsedControl"],
@@ -214,44 +213,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- SIDEBAR ---
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/yin-yang.png", width=64)
-    st.title("⚙️ Tùy Chỉnh Luận Giải")
-
-    selected_year = st.number_input(
-        "🗓️ Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1
-    )
-
-    user_note = st.text_area(
-        "📝 Ghi chú / Yêu cầu thêm:",
-        value=(
-            "Yêu cầu AI phân tích chi tiết Cách Cục (Thành cách/Pha cách), Tam Hợp chiếu,"
-            " minh bạch quy tắc và không bỏ sót bất kỳ cung hay tháng nào."
-        ),
-        height=120,
-    )
-
-    btn_sidebar_analyze = st.button(
-        "🔮 BẮT ĐẦU LUẬN GIẢI",
-        type="primary",
-        key="btn_sidebar",
-        use_container_width=True,
-    )
-
-    st.markdown("---")
-    st.subheader("🔌 Trạng Thái Kết Nối")
-
-    if API_KEY:
-        st.caption("✅ Gemini API: **Đã kết nối**")
-    else:
-        st.caption("❌ Gemini API: **Chưa có Key**")
-
-    if GITHUB_TOKEN and GITHUB_REPO:
-        st.caption(f"🐙 GitHub Repo: `{GITHUB_REPO}`")
-    else:
-        st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
-
 # --- TAB CHÍNH ---
 tab_main, tab_books, tab_contact = st.tabs(
     [
@@ -308,6 +269,26 @@ with tab_main:
                         use_container_width=True,
                     )
 
+        st.markdown("---")
+
+        # =========================================================
+        # MỤC TÙY CHỈNH LUẬN GIẢI (ĐÃ CHUYỂN VỀ DƯỚI UPLOAD ẢNH)
+        # =========================================================
+        st.subheader("⚙️ Tùy Chỉnh Luận Giải")
+
+        selected_year = st.number_input(
+            "🗓️ Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1
+        )
+
+        user_note = st.text_area(
+            "📝 Ghi chú / Yêu cầu thêm:",
+            value=(
+                "Cục (Thành cách/Pha cách), Tam Hợp chiếu, minh bạch quy tắc và"
+                " không bỏ sót bất kỳ cung hay tháng nào."
+            ),
+            height=120,
+        )
+
         btn_main_analyze = st.button(
             "🔮 BẮT ĐẦU LUẬN GIẢI",
             type="primary",
@@ -315,13 +296,26 @@ with tab_main:
             use_container_width=True,
         )
 
+        st.markdown("---")
+        st.subheader("🔌 Trạng Thái Kết Nối")
+
+        if API_KEY:
+            st.caption("✅ Gemini API: **Đã kết nối**")
+        else:
+            st.caption("❌ Gemini API: **Chưa có Key**")
+
+        if GITHUB_TOKEN and GITHUB_REPO:
+            st.caption(f"🐙 GitHub Repo:\n`{GITHUB_REPO}`")
+        else:
+            st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
+
     with col_output:
         st.subheader("📜 Kết Quả Luận Giải")
 
         if "analysis_result" not in st.session_state:
             st.session_state.analysis_result = None
 
-        if btn_sidebar_analyze or btn_main_analyze:
+        if btn_main_analyze:
             if not uploaded_file:
                 st.warning("⚠️ Vui lòng tải lên ảnh lá số trước!")
             elif not API_KEY:
@@ -443,7 +437,7 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
             st.markdown(st.session_state.analysis_result)
         else:
             st.info(
-                "👈 Nhấn nút **'BẮT ĐẦU LUẬN GIẢI'** ở Sidebar hoặc giao diện chính"
+                "👈 Nhấn nút **'BẮT ĐẦU LUẬN GIẢI'** ở bảng tùy chỉnh bên trái"
                 " để xuất kết quả tại đây."
             )
 
@@ -494,6 +488,6 @@ with tab_contact:
     st.markdown("""
     1. **Tải lá số**: Chọn file ảnh lá số Tử Vi ở **Tab Luận Giải Lá Số**.
     2. **Căn chỉnh**: Sử dụng thanh trượt để loại bỏ lề dư thừa nếu cần.
-    3. **Chọn năm**: Đặt năm cần xem Tiểu Hạn ở Sidebar bên trái.
+    3. **Chọn năm & Ghi chú**: Đặt năm cần xem và điền ghi chú ở cột bên trái ngay bên dưới ảnh.
     4. **Bắt đầu**: Bấm nút **BẮT ĐẦU LUẬN GIẢI** và chờ AI phân tích kết quả.
     """)
