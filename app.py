@@ -23,38 +23,45 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* 1. HIỂN THỊ CƯỠNG CHẾ NÚT TOGGLE SIDEBAR (GÓC TRÊN BÊN TRÁI) */
+    /* 1. ÉP HIỂN THỊ NÚT TOGGLE SIDEBAR TRÊN MỌI PHIÊN BẢN STREAMLIT */
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+        z-index: 99999 !important;
+        pointer-events: none !important;
+    }
+
+    header[data-testid="stHeader"] * {
+        pointer-events: auto !important;
+    }
+
     [data-testid="stSidebarCollapsedControl"],
     [data-testid="stSidebarCollapseButton"],
+    [data-testid="stHeaderIconButton"],
     button[aria-label="Open sidebar"],
     button[aria-label="Close sidebar"],
-    button[data-testid="baseButton-header"],
-    div[data-testid="stSidebarNav"] button,
-    [data-testid="collapsedControl"] {
+    button[data-testid="baseButton-header"] {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
-        z-index: 999999 !important;
-        color: #f6d365 !important;
-    }
-
-    /* Đặt vị trí & định dạng khung viền cho nút bấm khi thu gọn Sidebar */
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="collapsedControl"] {
-        top: 0.6rem !important;
-        left: 0.6rem !important;
+        z-index: 100000 !important;
         background-color: #161b22 !important;
         border: 1px solid #d4af37 !important;
         border-radius: 8px !important;
-        padding: 4px !important;
+        color: #f6d365 !important;
+        margin: 5px !important;
     }
 
-    /* 2. ĐỂ HEADER TRONG SUỐT VÀ ẨN FOOTER/TOOLBAR */
-    [data-testid="stHeader"] {
-        background-color: transparent !important;
-        z-index: 99998 !important;
+    [data-testid="stSidebarCollapsedControl"] svg,
+    [data-testid="stSidebarCollapseButton"] svg,
+    button[aria-label="Open sidebar"] svg,
+    button[aria-label="Close sidebar"] svg {
+        fill: #f6d365 !important;
+        color: #f6d365 !important;
+        width: 24px !important;
+        height: 24px !important;
     }
 
+    /* 2. ẨN FOOTER VÀ TOOLBAR MẶC ĐỊNH */
     div[data-testid="stToolbar"], footer {
         visibility: hidden !important;
         height: 0px !important;
@@ -85,14 +92,12 @@ st.markdown(
         margin-bottom: 2rem;
     }
 
-    /* Khung Expander */
     div[data-testid="stExpander"] {
         background-color: #1a202c;
         border-radius: 10px;
         border: 1px solid #2d3748;
     }
 
-    /* Nút bấm Nổi bật (Primary Button) */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #d4af37 0%, #f6d365 100%);
         color: #1a202c;
@@ -120,7 +125,6 @@ CACHE_FILE = Path(__file__).parent / "books_cache.json"
 
 # --- HÀM TƯƠNG TÁC GITHUB ---
 def upload_to_github(uploaded_file):
-    """Đẩy file ảnh lá số lên GitHub Repository."""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "Thiếu 'GITHUB_TOKEN' hoặc 'GITHUB_REPO' trong Secrets."
 
@@ -240,7 +244,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- SIDEBAR (THANH ĐIỀU HƯỚNG BÊN TRÁI) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/yin-yang.png", width=64)
     st.title("⚙️ Tùy Chỉnh Luận Giải")
@@ -278,7 +282,7 @@ with st.sidebar:
     else:
         st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
 
-# --- DANH SÁCH TAB CHÍNH ---
+# --- TAB CHÍNH ---
 tab_main, tab_books, tab_contact = st.tabs(
     [
         "🔮 Luận Giải Lá Số",
@@ -287,9 +291,7 @@ tab_main, tab_books, tab_contact = st.tabs(
     ]
 )
 
-# ==========================================
-# TAB 1: LUẬN GIẢI LÁ SỐ
-# ==========================================
+# TAB 1: LUẬN GIẢI
 with tab_main:
     col_input, col_output = st.columns([1, 1.3], gap="large")
 
@@ -455,7 +457,6 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                             content_payload.append(crop_img)
                         content_payload.append(prompt)
 
-                        # Sử dụng tên model chuẩn của Google GenAI SDK
                         response = client.models.generate_content(
                             model="gemini-2.5-flash", contents=content_payload
                         )
@@ -476,9 +477,7 @@ BƯỚC 7: TỔNG KẾT & PHƯƠNG PHÁP CẢI VẬN
                 " để xuất kết quả tại đây."
             )
 
-# ==========================================
-# TAB 2: QUẢN LÝ KHO SÁCH & TRÍCH DẪN
-# ==========================================
+# TAB 2: QUẢN LÝ KHO SÁCH
 with tab_books:
     st.subheader("📚 Kho Dữ Liệu Sách & Phú Tử Vi (JSON Cache)")
     pdf_text_context = load_cached_data()
@@ -503,14 +502,9 @@ with tab_books:
         for title in book_titles:
             st.markdown(f"- **{title}**")
     else:
-        st.caption(
-            "Chưa phát hiện danh sách tên cụ thể hoặc file JSON đang lưu ở dạng"
-            " mảng chuỗi văn bản thuần."
-        )
+        st.caption("Chưa phát hiện danh sách tên cụ thể.")
 
-# ==========================================
-# TAB 3: LIÊN HỆ & HỖ TRỢ
-# ==========================================
+# TAB 3: LIÊN HỆ
 with tab_contact:
     st.subheader("🔗 Thông Tin Liên Hệ & Kênh Hỗ Trợ")
     st.write(
