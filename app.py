@@ -34,24 +34,37 @@ st.markdown(
         z-index: 999999 !important;
     }
 
-    /* Giữ vị trí cố định cho nút 3 gạch ở góc trên bên trái */
+    /* Giữ vị trí cố định cho nút 3 gạch */
     [data-testid="collapsedControl"] {
         top: 0.5rem !important;
         left: 0.5rem !important;
     }
 
-    /* 2. Chỉ ẩn Footer và Toolbar dịch vụ */
+    /* 2. Ẩn Footer và Toolbar dịch vụ */
     div[data-testid="stToolbar"] {
         visibility: hidden;
+        height: 0%;
     }
     footer {
         visibility: hidden;
+        height: 0%;
     }
 
-    /* 3. Màu nền trang web */
-    .stApp {
-        background-color: #0e1117;
+    /* 3. MÀU NÊN TRANG WEB (Áp dụng cho container chính & nền tổng) */
+    .stApp, 
+    [data-testid="stAppViewContainer"],
+    [data-testid="stHeader"] {
+        background-color: #0e1117 !important;
     }
+
+    /* Tùy chỉnh màu nền Sidebar cho đồng bộ (Nếu muốn) */
+    [data-testid="stSidebar"] {
+        background-color: #161b22 !important;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
 
     /* 4. Kiểu dáng Tiêu đề chính & Tiêu đề phụ */
     .main-header {
