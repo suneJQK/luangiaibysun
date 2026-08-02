@@ -19,24 +19,43 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN & CẤU TRÚC CSS ---
+# --- TUỲ CHỈNH GIAO DIỆN & CẤU TRÚC CSS (ẨN HOÀN TOÀN TẤT CẢ THANH STREAMLIT) ---
 st.markdown(
     """
     <style>
-    /* 1. HIỂN THỊ NGUYÊN BẢN THANH HEADER & SIDEBAR TOGGLE */
+    /* 1. ẨN HEADER, TOOLBAR, FOOTER VÀ MENU STREAMLIT */
     header[data-testid="stHeader"] {
-        background-color: transparent !important;
-        z-index: 99999 !important;
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
     }
 
-    button[aria-label="Open sidebar"],
-    button[aria-label="Close sidebar"],
-    [data-testid="stSidebarCollapsedControl"],
-    [data-testid="stSidebarCollapseButton"] {
-        color: #f6d365 !important;
+    div[data-testid="stToolbar"] {
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    /* 2. MÀU NỀN TỔNG THỂ & SIDEBAR */
+    footer {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+    }
+
+    #MainMenu {
+        visibility: hidden !important;
+    }
+
+    /* 2. BỎ KHOẢNG TRẮNG DƯ THỪA Ở ĐẦU TRANG */
+    .stAppViewMainLayout {
+        padding-top: 0rem !important;
+    }
+    
+    .main .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    /* 3. MÀU NỀN TỔNG THỂ & SIDEBAR */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #0e1117 !important;
     }
@@ -45,7 +64,7 @@ st.markdown(
         background-color: #161b22 !important;
     }
 
-    /* 3. KIỂU DÁNG TIÊU ĐỀ & NÚT BẤM */
+    /* 4. KIỂU DÁNG TIÊU ĐỀ & NÚT BẤM */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -271,9 +290,7 @@ with tab_main:
 
         st.markdown("---")
 
-        # =========================================================
         # MỤC TÙY CHỈNH LUẬN GIẢI (ĐÃ CHUYỂN VỀ DƯỚI UPLOAD ẢNH)
-        # =========================================================
         st.subheader("⚙️ Tùy Chỉnh Luận Giải")
 
         selected_year = st.number_input(
