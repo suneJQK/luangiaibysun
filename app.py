@@ -19,24 +19,23 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- TUỲ CHỈNH GIAO DIỆN & CẤU TRÚC CSS (ẨN HOÀN TOÀN TẤT CẢ THANH STREAMLIT) ---
+# --- TUỲ CHỈNH GIAO DIỆN & CẤU TRÚC CSS (ẨN THANH STREAMLIT AN TOÀN) ---
 st.markdown(
     """
     <style>
-    /* 1. ẨN HEADER, TOOLBAR, FOOTER VÀ MENU STREAMLIT */
+    /* 1. ẨN AN TOÀN HEADER, TOOLBAR, FOOTER VÀ MENU STREAMLIT */
     header[data-testid="stHeader"] {
-        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+        min-height: 0px !important;
+    }
+
+    div[data-testid="stToolbar"] {
         visibility: hidden !important;
         height: 0px !important;
     }
 
-    div[data-testid="stToolbar"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
     footer {
-        display: none !important;
         visibility: hidden !important;
         height: 0px !important;
     }
@@ -45,11 +44,7 @@ st.markdown(
         visibility: hidden !important;
     }
 
-    /* 2. BỎ KHOẢNG TRẮNG DƯ THỪA Ở ĐẦU TRANG */
-    .stAppViewMainLayout {
-        padding-top: 0rem !important;
-    }
-    
+    /* 2. CHỈNH TỐI ƯU KHOẢNG TRẮNG ĐẦU TRANG */
     .main .block-container {
         padding-top: 1rem !important;
         padding-bottom: 2rem !important;
@@ -290,7 +285,7 @@ with tab_main:
 
         st.markdown("---")
 
-        # MỤC TÙY CHỈNH LUẬN GIẢI (ĐÃ CHUYỂN VỀ DƯỚI UPLOAD ẢNH)
+        # TÙY CHỈNH LUẬN GIẢI
         st.subheader("⚙️ Tùy Chỉnh Luận Giải")
 
         selected_year = st.number_input(
@@ -314,17 +309,13 @@ with tab_main:
         )
 
         st.markdown("---")
-        st.subheader("🔌 Trạng Thái Kết Nối")
 
-        if API_KEY:
-            st.caption("✅ Gemini API: **Đã kết nối**")
-        else:
-            st.caption("❌ Gemini API: **Chưa có Key**")
-
-        if GITHUB_TOKEN and GITHUB_REPO:
-            st.caption(f"🐙 GitHub Repo:\n`{GITHUB_REPO}`")
-        else:
-            st.caption("⚠️ GitHub Repo: **Chưa cấu hình**")
+        # MỤC LIÊN HỆ & HỖ TRỢ (ĐÃ THAY THẾ CHO TRẠNG THÁI KẾT NỐI)
+        st.subheader("🔗 Liên Hệ & Hỗ Trợ")
+        st.caption("Mọi góp ý, báo lỗi hoặc hỗ trợ vui lòng truy cập:")
+        st.markdown(
+            "👉 **[Kênh Hỗ Trợ TikTok](https://www.tiktok.com/@tieuyet11)**"
+        )
 
     with col_output:
         st.subheader("📜 Kết Quả Luận Giải")
