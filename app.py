@@ -342,7 +342,7 @@ with tab_main:
 
                     prompt = f"""
 Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu . Nhiệm vụ của bạn là đọc hiểu lá số và thực hiện một bản luận giải CỰC KỲ CHI TIẾT.
-
+-*** Nói đúng chuyên môn không nói giảm nói tránh các yếu tố xấu ***
 ====================================================================
 📖 ĐẶC BIỆT LƯU Ý VỀ DỮ LIỆU SÁCH & PHÚ TỬ VI (BOOKS_CACHE.JSON):
 ====================================================================
@@ -350,8 +350,6 @@ Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu . Nhiệm vụ của bạ
 - BẮT BUỘC bạn phải tra cứu và áp dụng các câu phú, lý thuyết có trong phần DỮ LIỆU SÁCH này để luận giải lá số.
 - Khi đưa ra đánh giá, nhận định về tinh hệ, chính tinh, sát tinh hay cách cục, bạn PHẢI trích dẫn cụ thể theo định dạng: 
   👉 `[Trích sách: <Tên sách / Tên tác giả> - <Câu phú hoặc lý thuyết tương ứng>]`
-- Ở BƯỚC 7 (Cuối bài luận), tạo một bảng/mục riêng: "📖 BẢNG TỔNG HỢP CÁC CÂU PHÚ & TÀI LIỆU SÁCH ĐÃ TRÍCH DẪN" liệt kê lại toàn bộ các trích dẫn đã dùng.
-
 ====================================================================
 MA TRẬN LUẬN GIẢI CHI TIẾT
 ====================================================================
@@ -404,8 +402,9 @@ MỖI CUNG PHẢI TRÌNH BÀY ĐỦ 5 MỤC NÀY:
 
 DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ:
 1. Cung Mệnh | 2. Cung Phụ Mẫu | 3. Cung Phúc Đức | 4. Cung Điền Trạch | 5. Cung Quan Lộc | 6. Cung Nô Bộc | 7. Cung Thiên Di | 8. Cung Tật Ách | 9. Cung Tài Bạch | 10. Cung Tử Tức | 11. Cung Phu Thê | 12. Cung Huynh Đệ
-2. Tam hợp cung gồm có (Mệnh -Tài -Quan , Phụ - Tử - Nô , Phúc - Phối - Di ,Điền - Tật - Huynh).
-3. Xung chiếu gồm ( Mệnh - DI ,Phụ -Tật , Phúc - Tài ,Điền- Tử ,Quan - Phối,Nô - Huynh).
+2. Cung mệnh có nhữn đặc điểm gì nổi bật ngoại hình tính cách bị ảnh hưởng bởi những sao gì...
+3. Tam hợp cung gồm có (Mệnh -Tài -Quan , Phụ - Tử - Nô , Phúc - Phối - Di ,Điền - Tật - Huynh).
+4. Xung chiếu gồm ( Mệnh - DI ,Phụ -Tật , Phúc - Tài ,Điền- Tử ,Quan - Phối,Nô - Huynh).
 ---
 BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
 - Được kí hiêu số ở góc trên bên phải mỗi cung
