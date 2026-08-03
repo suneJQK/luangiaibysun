@@ -404,7 +404,8 @@ MỖI CUNG PHẢI TRÌNH BÀY ĐỦ 5 MỤC NÀY:
 
 DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ:
 1. Cung Mệnh | 2. Cung Phụ Mẫu | 3. Cung Phúc Đức | 4. Cung Điền Trạch | 5. Cung Quan Lộc | 6. Cung Nô Bộc | 7. Cung Thiên Di | 8. Cung Tật Ách | 9. Cung Tài Bạch | 10. Cung Tử Tức | 11. Cung Phu Thê | 12. Cung Huynh Đệ
-
+2. Tam hợp cung gồm có (Mệnh -Tài -Quan , Phụ - Tử - Nô , Phúc - Phối - Di ,Điền - Tật - Huynh).
+3. Xung chiếu gồm ( Mệnh - DI ,Phụ -Tật , Phúc - Tài ,Điền- Tử ,Quan - Phối,Nô - Huynh).
 ---
 BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
 - Được kí hiêu số ở góc trên bên phải mỗi cung
