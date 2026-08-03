@@ -412,7 +412,7 @@ BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
 
 ---
 BƯỚC 5: LUẬN TIỂU HẠN & LƯU TỨ HÓA NĂM {selected_year} (TRỌNG TÂM)
--** Năm tiểu hạn đực kí hiệu là Tí Sữu Giần Mão...Hợi ở góc dưới trái mỗi cung 
+- Năm tiểu hạn đực kí hiệu là Tí Sữu Giần Mão...Hợi ở góc dưới trái mỗi cung 
 - Năng lượng Hóa Lộc, Quyền, Khoa, Kỵ rơi vào các sao nào, cung nào. 3 sự kiện LỚN NHẤT năm.
 - Xét các sao lưu của năm như lưu lộc tồn ,lưu kình dương , lưu đà la , lưu đào, lưu hồng, lưu thiên mã,lưu khốc,lươi hư.
 ---
