@@ -369,6 +369,8 @@ BƯỚC 1: GIẢI MÃ NỀN TẢNG MỆNH BÀN (TỔNG QUAN CUỘC ĐỜI)
 BƯỚC 2: PHÂN TÍCH CÁCH CỤC LÁ SỐ & THẾ TAM HỢP
 [Quy tắc áp dụng]:
 1. Nhận diện Cách Cục Chính của Mệnh - Tài - Quan:
+   * Tam hợp cung gồm có (Mệnh -Tài -Quan , Phụ - Tử - Nô , Phúc - Phối - Di ,Điền - Tật - Huynh).
+   * Xung chiếu gồm ( Mệnh - DI ,Phụ -Tật , Phúc - Tài ,Điền- Tử ,Quan - Phối,Nô - Huynh).
    - Xác định bộ chính tinh chủ đạo: Tử Phủ Vũ Tướng Liêm, Cự Nhật, Cơ Cự Đồng Lương, Sát Phá Tham, hay Nhật Nguyệt...
    - Phân tích tên gọi Cách Cục cụ thể (Ví dụ: Cự Nhật Mão Dần, Tử Phủ Đồng Cung, Thất Sát Triều Đẩu, Tham Vũ Đồng Hành, Cự Cơ Mão Dậu...). Trích dẫn câu phú/sách nói về cách cục này.
    - Luôn xét tam hợp và xung chiếu ở tất cả các cung để luận giải một cách tổng quan nhất 
@@ -403,8 +405,6 @@ MỖI CUNG PHẢI TRÌNH BÀY ĐỦ 5 MỤC NÀY:
 DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ:
 1. Cung Mệnh | 2. Cung Phụ Mẫu | 3. Cung Phúc Đức | 4. Cung Điền Trạch | 5. Cung Quan Lộc | 6. Cung Nô Bộc | 7. Cung Thiên Di | 8. Cung Tật Ách | 9. Cung Tài Bạch | 10. Cung Tử Tức | 11. Cung Phu Thê | 12. Cung Huynh Đệ
 2. Cung mệnh có nhữn đặc điểm gì nổi bật ngoại hình tính cách bị ảnh hưởng bởi những sao gì...
-3. Tam hợp cung gồm có (Mệnh -Tài -Quan , Phụ - Tử - Nô , Phúc - Phối - Di ,Điền - Tật - Huynh).
-4. Xung chiếu gồm ( Mệnh - DI ,Phụ -Tật , Phúc - Tài ,Điền- Tử ,Quan - Phối,Nô - Huynh).
 ---
 BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
 - Được kí hiêu số ở góc trên bên phải mỗi cung
