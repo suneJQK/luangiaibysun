@@ -337,11 +337,11 @@ with tab_main:
                     truncated_context = (
                         pdf_text_context[:300000]
                         if pdf_text_context
-                        else "Sử dụng kiến thức Tử Vi Nam Phái, Bắc Phái, Trung Châu Phái."
+                        else "Sử dụng kiến thức Tử Vi."
                     )
 
                     prompt = f"""
-Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu (kết hợp kiến thức Nam Phái, Bắc Phái và Trung Châu Phái). Nhiệm vụ của bạn là đọc hiểu lá số và thực hiện một bản luận giải CỰC KỲ CHI TIẾT.
+Bạn là Chuyên Gia Tử Vi Đẩu Số hàng đầu . Nhiệm vụ của bạn là đọc hiểu lá số và thực hiện một bản luận giải CỰC KỲ CHI TIẾT.
 
 ====================================================================
 📖 ĐẶC BIỆT LƯU Ý VỀ DỮ LIỆU SÁCH & PHÚ TỬ VI (BOOKS_CACHE.JSON):
@@ -357,8 +357,8 @@ MA TRẬN LUẬN GIẢI CHI TIẾT
 ====================================================================
 
 [RULE - LUẬN PHỤ TINH & SÁT TINH]:
-Mỗi phụ tinh/sát tinh xuất hiện BẮT BUỘC phải có 1 dòng phân tích riêng theo công thức: 
-[Tên Sao] + [Đắc/Hãm] + [Tương tác Cung/Chính tinh/Sao chiếu] -> [Hành vi/Tai họa/Cát lành cụ thể] + [Trích sách: ... (nếu có trong dữ liệu)].
+Mỗi phụ tinh/sát tinh xuất hiện BẮT BUỘC phải phân tích riêng theo công thức: 
+[Tên Sao] + [Đắc/Hãm] + [Tương tác Cung/Chính tinh/Sao chiếu] -> [Hành vi/Tai họa/Cát lành Đặc điểm ảnh hưởng cụ thể] + [Trích sách: ... (nếu có trong dữ liệu)].
 
 ---
 BƯỚC 1: GIẢI MÃ NỀN TẢNG MỆNH BÀN (TỔNG QUAN CUỘC ĐỜI)
@@ -373,6 +373,9 @@ BƯỚC 2: PHÂN TÍCH CÁCH CỤC LÁ SỐ & THẾ TAM HỢP
 1. Nhận diện Cách Cục Chính của Mệnh - Tài - Quan:
    - Xác định bộ chính tinh chủ đạo: Tử Phủ Vũ Tướng Liêm, Cự Nhật, Cơ Cự Đồng Lương, Sát Phá Tham, hay Nhật Nguyệt...
    - Phân tích tên gọi Cách Cục cụ thể (Ví dụ: Cự Nhật Mão Dần, Tử Phủ Đồng Cung, Thất Sát Triều Đẩu, Tham Vũ Đồng Hành, Cự Cơ Mão Dậu...). Trích dẫn câu phú/sách nói về cách cục này.
+   - Luôn xét tam hợp và xung chiếu ở tất cả các cung để luận giải một cách tổng quan nhất 
+   - **Khi xét các cách cục luôn xét xem nó có được trợ lực bởi các bộ sao không ví dụ( xương khúc , khôi việt ,khoa quền lộc kỵ,tả hữu ,thai tọa..).
+   - **hoặc có bị phá bởi sát tinh (không kiếp kình đà linh hỏa )tác động bởi sát tinh lên cung đó là gì tốt hay xấu .
 2. Phân tích Đỉnh Cao Cách Cục (Thành Cách hay Pha Cách):
    - **Thành Cách:** Đạt được nhờ hội các Cát tinh/Quyền tinh nào? (Khôi Việt, Tả Hữu, Xương Khúc, Lộc Tồn, Tứ Hóa...).
    - **Pha Cách / Chiết Giảm:** Bị tổn hại, suy giảm uy lực bởi các Sát tinh/Bại tinh nào? (Kình Đà, Hỏa Linh, Không Kiếp, Kỵ, Hình...).
@@ -404,21 +407,23 @@ DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ:
 
 ---
 BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
+- Được kí hiêu số ở góc trên bên phải mỗi cung
 - Xét Thiên Thời, Địa Lợi, Nhân Hòa và Chấm điểm Đại Vận (thang 5 sao ★★★★★).
 
 ---
 BƯỚC 5: LUẬN TIỂU HẠN & LƯU TỨ HÓA NĂM {selected_year} (TRỌNG TÂM)
+-** Năm tiểu hạn đực kí hiệu là Tí Sữu Giần Mão...Hợi ở góc dưới trái mỗi cung 
 - Năng lượng Hóa Lộc, Quyền, Khoa, Kỵ rơi vào các sao nào, cung nào. 3 sự kiện LỚN NHẤT năm.
-
+- Xét các sao lưu của năm như lưu lộc tồn ,lưu kình dương , lưu đà la , lưu đào, lưu hồng, lưu thiên mã,lưu khốc,lươi hư.
 ---
 BƯỚC 6: LẬP TRÌNH VẬN HẠN 12 THÁNG ÂM LỊCH NĂM {selected_year}
-- Bắt buộc đủ 12 tháng (Tháng 1 đến Tháng 12 Âm lịch).
-
+- Bắt buộc đủ 12 tháng có kí hiệu ở mỗi cung là T1 đến T12 ở góc dười bên phải (Tháng 1 đến Tháng 12 Âm lịch) 
+- Nêu tháng 1,2,3..12 ở cung nào có sao gì diễn biến của tháng đó như thế nào và vẫn phải dựa vào cung tiểu hạn của năm đó.
 ---
 BƯỚC 7: TỔNG KẾT, PHƯƠNG PHÁP CẢI VẬN & DANH SÁCH TRÍCH DẪN
-- Đưa ra lời khuyên cải vận tổng thể.
-- Lập **📖 BẢNG TỔNG HỢP CÁC CÂU PHÚ & TÀI LIỆU SÁCH ĐÃ TRÍCH DẪN** (liệt kê danh sách tên sách, câu phú đã dùng trong suốt bài luận).
-
+-** Lập bảng tổng kết cách cục của toàn bộ lá số điểm tốt điểm xấu 
+-** Xét bản mệnh lá số so với các cung lục thân quan hệ với tuyến phụ mẫu nô bộc con cái và đặc biệt tuyến phu thê
+-** Đưa ra lời khuyên cải vận tổng thể.
 --------------------------------------------------------------------
 📚 NỘI DUNG TỪ KHO DỮ LIỆU SÁCH (BOOKS_CACHE.JSON CONTEXT):
 {truncated_context}
