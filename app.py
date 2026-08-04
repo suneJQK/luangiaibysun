@@ -485,3 +485,39 @@ with tab_books:
             st.markdown(f"- **{title}**")
     else:
         st.caption("Chưa phát hiện danh sách tên cụ thể.")
+# Nạp dữ liệu kho sách đính kèm trong Prompt nếu có
+                 ref_books_context = ""
+                 if books_text:
+                     ref_books_context = f"""
+                     user_prompt = f"""
+                     # ========================================================
+                  # ĐOẠN CODE CỦA BẠN ĐÃ ĐƯỢC TÍCH HỢP TRỰC TIẾP TẠI ĐÂY
+                  # ========================================================
+                  content_payload = [image]
+                  for cung_name, crop_img in cropped_dict.items():
+                      content_payload.append(f"Mảnh cắt Cung {cung_name}:")
+                      content_payload.append(crop_img)
+                  content_payload.append(user_prompt)
+
+                  # Gọi API với cấu hình temperature thấp để tuân thủ quy tắc
+                  response = client.models.generate_content(
+                      model="gemini-3.6-flash",
+                      contents=content_payload,
+                      config=types.GenerateContentConfig(
+                          system_instruction=system_instruction_text,
+                          temperature=0.15
+                      )
+                  )
+
+                  if response and response.text:
+                      st.session_state.analysis_result = response.text
+                      st.success("✅ Đã hoàn tất luận giải theo đúng bộ quy tắc `tu_vi_engine.json`!")
+
+              except Exception as e:
+                  st.error(f"❌ Lỗi xử lý AI Engine: {e}")
+
+  # Hiển thị kết quả ra màn hình
+  if st.session_state.analysis_result:
+      st.markdown(st.session_state.analysis_result)
+  else:
+      st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý theo quy tắc `tu_vi_engine.json`.")
