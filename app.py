@@ -8,6 +8,7 @@ from pathlib import Path
 
 from github import Github, GithubException
 from google import genai
+from google.genai import types
 from PIL import Image
 import streamlit as st
 
@@ -227,7 +228,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- TAB CHÍNH (ĐÃ XÓA TAB LIÊN HỆỞ TRÊN) ---
+# --- TAB CHÍNH ---
 tab_main, tab_books = st.tabs(
     [
         "🔮 Luận Giải Lá Số",
@@ -404,7 +405,7 @@ MỖI CUNG PHẢI TRÌNH BÀY ĐỦ 5 MỤC NÀY:
 
 DANH SÁCH 12 CUNG BẮT BUỘC PHẢI LUẬN ĐỦ:
 1. Cung Mệnh | 2. Cung Phụ Mẫu | 3. Cung Phúc Đức | 4. Cung Điền Trạch | 5. Cung Quan Lộc | 6. Cung Nô Bộc | 7. Cung Thiên Di | 8. Cung Tật Ách | 9. Cung Tài Bạch | 10. Cung Tử Tức | 11. Cung Phu Thê | 12. Cung Huynh Đệ
-2. Cung mệnh có nhữn đặc điểm gì nổi bật ngoại hình tính cách bị ảnh hưởng bởi những sao gì...
+
 ---
 BƯỚC 4: PHÂN TÍCH ĐẠI VẬN 10 NĂM HIỆN TẠI
 - Được kí hiêu số ở góc trên bên phải mỗi cung
@@ -415,10 +416,12 @@ BƯỚC 5: LUẬN TIỂU HẠN & LƯU TỨ HÓA NĂM {selected_year} (TRỌNG T�
 - Năm tiểu hạn đực kí hiệu là Tí Sữu Giần Mão...Hợi ở góc dưới trái mỗi cung 
 - Năng lượng Hóa Lộc, Quyền, Khoa, Kỵ rơi vào các sao nào, cung nào. 3 sự kiện LỚN NHẤT năm.
 - Xét các sao lưu của năm như lưu lộc tồn ,lưu kình dương , lưu đà la , lưu đào, lưu hồng, lưu thiên mã,lưu khốc,lươi hư.
+
 ---
 BƯỚC 6: LẬP TRÌNH VẬN HẠN 12 THÁNG ÂM LỊCH NĂM {selected_year}
 - Bắt buộc đủ 12 tháng có kí hiệu ở mỗi cung là T1 đến T12 ở góc dười bên phải (Tháng 1 đến Tháng 12 Âm lịch) 
 - Nêu tháng 1,2,3..12 ở cung nào có sao gì diễn biến của tháng đó như thế nào và vẫn phải dựa vào cung tiểu hạn của năm đó.
+
 ---
 BƯỚC 7: TỔNG KẾT, PHƯƠNG PHÁP CẢI VẬN & DANH SÁCH TRÍCH DẪN
 -** Lập bảng tổng kết cách cục của toàn bộ lá số điểm tốt điểm xấu 
@@ -440,10 +443,14 @@ BƯỚC 7: TỔNG KẾT, PHƯƠNG PHÁP CẢI VẬN & DANH SÁCH TRÍCH DẪN
                         content_payload.append(prompt)
 
                         response = client.models.generate_content(
-                            model="gemini-3.6-flash", contents=content_payload
+                            model="gemini-2.5-flash",
+                            contents=content_payload,
+                            config=types.GenerateContentConfig(
+                                temperature=0.15
+                            )
                         )
 
-                        if response:
+                        if response and response.text:
                             st.session_state.analysis_result = response.text
                             st.success(
                                 f"✅ Đã phân tích xong lá số & Cách cục cho năm {selected_year}!"
@@ -485,39 +492,3 @@ with tab_books:
             st.markdown(f"- **{title}**")
     else:
         st.caption("Chưa phát hiện danh sách tên cụ thể.")
-# Nạp dữ liệu kho sách đính kèm trong Prompt nếu có
-                 ref_books_context = ""
-                 if books_text:
-                     ref_books_context = f"""
-                     user_prompt = f"""
-                     # ========================================================
-                  # ĐOẠN CODE CỦA BẠN ĐÃ ĐƯỢC TÍCH HỢP TRỰC TIẾP TẠI ĐÂY
-                  # ========================================================
-                  content_payload = [image]
-                  for cung_name, crop_img in cropped_dict.items():
-                      content_payload.append(f"Mảnh cắt Cung {cung_name}:")
-                      content_payload.append(crop_img)
-                  content_payload.append(user_prompt)
-
-                  # Gọi API với cấu hình temperature thấp để tuân thủ quy tắc
-                  response = client.models.generate_content(
-                      model="gemini-3.6-flash",
-                      contents=content_payload,
-                      config=types.GenerateContentConfig(
-                          system_instruction=system_instruction_text,
-                          temperature=0.15
-                      )
-                  )
-
-                  if response and response.text:
-                      st.session_state.analysis_result = response.text
-                      st.success("✅ Đã hoàn tất luận giải theo đúng bộ quy tắc `tu_vi_engine.json`!")
-
-              except Exception as e:
-                  st.error(f"❌ Lỗi xử lý AI Engine: {e}")
-
-  # Hiển thị kết quả ra màn hình
-  if st.session_state.analysis_result:
-      st.markdown(st.session_state.analysis_result)
-  else:
-      st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý theo quy tắc `tu_vi_engine.json`.")
