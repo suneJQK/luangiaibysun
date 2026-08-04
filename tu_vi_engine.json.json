@@ -1,0 +1,501 @@
+{
+  "system_title": "ENGINE SUY LUẬN TỬ VI ĐẨU SỐ",
+  "version": "1.0",
+  "chapters": [
+    {
+      "chapter_id": 1,
+      "title": "CHƯƠNG 01 -- NGUYÊN TẮC NỀN TẢNG & THỨ TỰ ƯU TIÊN",
+      "purpose": "Định nghĩa toàn bộ thuật ngữ và quy tắc suy luận nền tảng. AI không được phép luận giải nếu chưa áp dụng đầy đủ các quy tắc trong chương này.",
+      "supreme_principles": {
+        "article_1_no_early_conclusion": "Quan sát → Thu thập dữ kiện → Phân tích từng yếu tố → Phân tích sự phối hợp → So sánh cát hung → Đánh giá mạnh yếu → Tổng hợp → Kết luận.",
+        "article_2_no_single_star_conclusion": "Luôn đánh giá tổ hợp sao, trạng thái Miếu--Vượng--Đắc--Hãm, trợ lực và phá cách trước khi kết luận.",
+        "article_3_mandatory_components": [
+          "Dấu hiệu",
+          "Nguyên nhân",
+          "Các sao tham gia",
+          "Sao trợ lực",
+          "Sao phá cách",
+          "Mức độ mạnh yếu",
+          "Ảnh hưởng thực tế",
+          "Kết luận cuối"
+        ]
+      },
+      "priority_order": [
+        "1. Chính tinh",
+        "2. Miếu--Vượng--Đắc--Hãm",
+        "3. Phụ tinh",
+        "4. Bộ sao",
+        "5. Tam phương",
+        "6. Xung chiếu",
+        "7. Giáp cung",
+        "8. Nhị hợp",
+        "9. Tuần",
+        "10. Triệt",
+        "11. Tứ Hóa",
+        "12. Đại vận",
+        "13. Tiểu hạn",
+        "14. Lưu niên",
+        "15. Lưu tháng",
+        "16. Tổng hợp"
+      ],
+      "definitions": {
+        "ban_cung": "Là cung đang được luận và là điểm khởi đầu của mọi phân tích.",
+        "chinh_tinh": "Quyết định bản chất chính của cung.",
+        "phu_tinh": "Có tác dụng điều chỉnh, tăng cường hoặc suy giảm, không tự phủ định hoàn toàn Chính tinh.",
+        "tam_hop": {
+          "groups": [
+            "Dần--Ngọ--Tuất",
+            "Thân--Tý--Thìn",
+            "Hợi--Mão--Mùi",
+            "Tỵ--Dậu--Sửu"
+          ],
+          "note": "Trong luận Tử Vi phải xét Tam phương của cung, không chỉ nhóm địa chi."
+        },
+        "tam_phuong_tu_chinh": "Một cung luôn xét Bản cung, Hai cung Tam hợp và Một cung Xung chiếu.",
+        "xung_chieu": [
+          "Mệnh ↔ Thiên Di",
+          "Phụ Mẫu ↔ Tật Ách",
+          "Phúc Đức ↔ Tài Bạch",
+          "Điền Trạch ↔ Tử Tức",
+          "Quan Lộc ↔ Phu Thê",
+          "Nô Bộc ↔ Huynh Đệ"
+        ],
+        "giap_cung": "Hai cung liền kề bản cung, chỉ có tác dụng bổ trợ hoặc làm suy giảm.",
+        "nhi_hop": [
+          "Tý--Sửu",
+          "Dần--Hợi",
+          "Mão--Tuất",
+          "Thìn--Dậu",
+          "Tỵ--Thân",
+          "Ngọ--Mùi"
+        ],
+        "tuan_triet": {
+          "tuan": "Làm chậm, giảm, che.",
+          "triet": "Cắt, chặn, mạnh hơn Tuần."
+        },
+        "tu_hoa": "Luôn xét cùng sao gốc và toàn bộ tinh hệ (Hóa Lộc, Hóa Quyền, Hóa Khoa, Hóa Kỵ).",
+        "dai_van": "Là môi trường phát huy hoặc hạn chế lá số gốc.",
+        "tieu_han": "Là sự kiện của năm, luôn xét sau Đại vận."
+      },
+      "synthesis_rule": "Không có sao tuyệt đối tốt hoặc tuyệt đối xấu. Mọi kết luận phải tổng hợp toàn bộ tinh hệ, các quan hệ cung và vận hạn trước khi đưa ra nhận định cuối."
+    },
+    {
+      "chapter_id": 2,
+      "title": "CHƯƠNG 02 -- HỆ THỐNG 14 CHÍNH TINH (KHUNG QUY TẮC)",
+      "general_rule": "Mỗi Chính tinh phải được luận theo cùng một khuôn mẫu 14 bước.",
+      "main_stars_list": [
+        "Tử Vi",
+        "Thiên Cơ",
+        "Thái Dương",
+        "Vũ Khúc",
+        "Thiên Đồng",
+        "Liêm Trinh",
+        "Thiên Phủ",
+        "Thái Âm",
+        "Tham Lang",
+        "Cự Môn",
+        "Thiên Tướng",
+        "Thiên Lương",
+        "Thất Sát",
+        "Phá Quân"
+      ],
+      "analysis_template": {
+        "header": [
+          "Tên Chính tinh",
+          "Ngũ hành",
+          "Âm/Dương",
+          "Hóa khí",
+          "Chủ về",
+          "Tính chất cốt lõi"
+        ],
+        "sections": {
+          "A_trang_thai": "Miếu / Vượng / Đắc / Bình / Hãm",
+          "B_theo_12_cung": "Mệnh, Phụ Mẫu, Phúc Đức, Điền Trạch, Quan Lộc, Nô Bộc, Thiên Di, Tật Ách, Tài Bạch, Tử Tức, Phu Thê, Huynh Đệ",
+          "C_bo_sao_cat": "Liệt kê và giải thích",
+          "D_bo_sao_hung": "Liệt kê và giải thích",
+          "E_thanh_cach_pha_cach": "Nêu điều kiện, mức độ và ngoại lệ",
+          "F_trich_dan_sach": "Dẫn từ BOOKS_CACHE nếu có",
+          "G_ket_luan": "Tổng hợp theo trọng số chương 8"
+        }
+      },
+      "mandatory_rules": [
+        "Không kết luận chỉ dựa vào Chính tinh.",
+        "Luôn xét Miếu--Vượng--Đắc--Hãm trước.",
+        "Luôn xét Tam phương Tứ chính.",
+        "Luôn kiểm tra Tứ Hóa, Tuần, Triệt và Đại vận trước khi kết luận."
+      ]
+    },
+    {
+      "chapter_id": 3,
+      "title": "CHƯƠNG 03 -- MA TRẬN TƯƠNG TÁC SAO (KHUNG SUY LUẬN)",
+      "goal": "Xây dựng quy tắc đánh giá khi nhiều sao cùng xuất hiện. Không được luận từng sao độc lập rồi cộng kết quả.",
+      "interaction_priority": [
+        "1. Chính tinh ↔ Chính tinh",
+        "2. Chính tinh ↔ Tứ Hóa",
+        "3. Chính tinh ↔ Sát tinh",
+        "4. Chính tinh ↔ Cát tinh",
+        "5. Phụ tinh ↔ Phụ tinh",
+        "6. Sát tinh ↔ Sát tinh",
+        "7. Tác động của Tam phương Tứ chính",
+        "8. Đại vận, Tiểu hạn, Lưu niên"
+      ],
+      "combination_eval_template": [
+        "Tổ hợp",
+        "Điều kiện hình thành",
+        "Ý nghĩa cốt lõi",
+        "Điều kiện thành cách / Phá cách",
+        "Sao cứu giải / Sao làm tăng hung",
+        "Mức độ ảnh hưởng (Rất mạnh / Mạnh / Trung bình / Yếu)",
+        "Lĩnh vực chịu tác động",
+        "Trích sách (BOOKS_CACHE nếu có)"
+      ],
+      "example_rules": [
+        {
+          "combination": "Tử Vi + Thiên Phủ",
+          "description": "Chủ quản trị, ổn định, năng lực điều hành. Nếu hội Tả Hữu, Khôi Việt, Xương Khúc: tăng uy tín. Nếu gặp Không Kiếp, Kình Đà: giảm quyền lực, khó phát huy."
+        },
+        {
+          "combination": "Cự Môn + Hóa Kỵ",
+          "description": "Tăng thị phi, tranh luận. Nếu thêm Văn Xương, Văn Khúc: có thể chuyển thành năng lực diễn đạt trong nghề phù hợp. Nếu gặp Không Kiếp: tăng nguy cơ tranh chấp."
+        },
+        {
+          "combination": "Thất Sát + Tử Vi",
+          "description": "Có khả năng thành quyền cách nếu đủ cát tinh. Nếu hãm địa và nhiều sát tinh: dễ cực đoan, biến động."
+        }
+      ],
+      "categories_to_build": [
+        "Chính tinh × Chính tinh",
+        "Chính tinh × Cát tinh",
+        "Chính tinh × Sát tinh",
+        "Chính tinh × Tứ Hóa",
+        "Cát tinh × Sát tinh",
+        "Sát tinh × Sát tinh",
+        "Bộ sao thành cách",
+        "Bộ sao phá cách"
+      ]
+    },
+    {
+      "chapter_id": 4,
+      "title": "CHƯƠNG 04 -- THƯ VIỆN CÁCH CỤC TỬ VI",
+      "goal": "Chuẩn hóa việc nhận diện, đánh giá và kết luận các cách cục. AI không được gán tên cách cục nếu chưa kiểm tra đủ điều kiện.",
+      "pattern_template": [
+        "Tên cách cục",
+        "Điều kiện hình thành / Thành cách / Phá cách",
+        "Sao trợ lực / Sao phá cách",
+        "Ý nghĩa cốt lõi",
+        "Ảnh hưởng tới: Công danh, Tài lộc, Hôn nhân, Sức khỏe",
+        "Ngoại lệ & Trích sách",
+        "Đánh giá: Điểm (0--10), Mức độ (Rất mạnh / Mạnh / Trung bình / Yếu), Xếp hạng (★ đến ★★★★★), Xác suất phát huy (Cao / Trung bình / Thấp)"
+      ],
+      "pattern_groups": {
+        "Tu_Phu_Vu_Tuong": [
+          "Tử Phủ Đồng Cung",
+          "Tử Phủ Triều Viên",
+          "Phủ Tướng Triều Viên"
+        ],
+        "Co_Nguyet_Dong_Luong": [
+          "Cơ Nguyệt Đồng Lương",
+          "Đồng Âm",
+          "Cơ Cự"
+        ],
+        "Sat_Pha_Tham": [
+          "Sát Phá Tham",
+          "Thất Sát Triều Đẩu",
+          "Liêm Tham",
+          "Vũ Tham"
+        ],
+        "Nhat_Nguyet": [
+          "Nhật Nguyệt tịnh minh",
+          "Cự Nhật",
+          "Nhật Nguyệt phản bối (nếu đủ điều kiện)"
+        ]
+      },
+      "anti_confusion_rules": [
+        "Không chỉ dựa vào tên tổ hợp sao.",
+        "Phải đủ điều kiện vị trí, trạng thái và trợ lực.",
+        "Nếu thiếu điều kiện thì ghi 'chưa thành cách'.",
+        "Nếu bị sát tinh phá mạnh thì ghi 'phá cách' và nêu nguyên nhân."
+      ]
+    },
+    {
+      "chapter_id": 5,
+      "title": "CHƯƠNG 05 -- QUY TẮC LUẬN GIẢI 12 CUNG",
+      "goal": "Chuẩn hóa cách AI phân tích từng cung theo cùng một quy trình, không thiên lệch về bất kỳ cung nào.",
+      "cung_list": [
+        "Mệnh",
+        "Phụ Mẫu",
+        "Phúc Đức",
+        "Điền Trạch",
+        "Quan Lộc",
+        "Nô Bộc",
+        "Thiên Di",
+        "Tật Ách",
+        "Tài Bạch",
+        "Tử Tức",
+        "Phu Thê",
+        "Huynh Đệ"
+      ],
+      "cung_layout": {
+        "1_cau_truc_tinh_he": "Chính tinh, Phụ tinh, Cát tinh, Sát tinh, Bại tinh",
+        "2_tam_phuong_tu_chinh": "Hai cung Tam hợp, Cung Xung chiếu (Đánh giá ảnh hưởng)",
+        "3_giap_cung": "Hai cung kề, Sao ảnh hưởng, Mức độ trợ lực",
+        "4_ngu_hanh": "Ngũ hành cung, Quan hệ với Bản mệnh, Quan hệ với Cục",
+        "5_luan_tung_sao": "Ý nghĩa nguyên thủy, Ý nghĩa tại cung, Tương tác với các sao khác, Ảnh hưởng thực tế, Trích sách (nếu có)",
+        "6_tong_hop": "Điểm mạnh, Điểm yếu, Cơ hội, Rủi ro, Khuyến nghị",
+        "7_cham_diem": "Điểm 0--10, Xếp hạng ★ đến ★★★★★"
+      },
+      "anti_error_rules": [
+        "Không được viết Cung Mệnh quá dài rồi rút ngắn các cung khác.",
+        "Không bỏ qua Tam phương Tứ chính.",
+        "Không kết luận chỉ dựa vào một sao.",
+        "Nếu có mâu thuẫn giữa cát và hung phải giải thích sao nào chiếm ưu thế và vì sao."
+      ]
+    },
+    {
+      "chapter_id": 6,
+      "title": "CHƯƠNG 06 -- QUY TẮC ĐẠI VẬN, TIỂU HẠN VÀ LƯU NIÊN",
+      "goal": "Chuẩn hóa trình tự luận vận hạn, tránh đảo tầng suy luận giữa lá số gốc, Đại vận, Tiểu hạn và Lưu niên.",
+      "priority_order": [
+        "1. Lá số gốc",
+        "2. Đại vận",
+        "3. Tiểu hạn",
+        "4. Lưu Thái Tuế",
+        "5. Lưu Tứ Hóa",
+        "6. Các sao lưu khác",
+        "7. Lưu nguyệt (khi luận theo tháng)"
+      ],
+      "layer_details": {
+        "dai_van": "Phân tích Cung Đại vận, Chính tinh (trạng thái), Tam phương Tứ chính, Xung chiếu, Giáp cung, Tuần/Triệt, Tứ Hóa Đại vận, Quan hệ với Mệnh/Thân và cách cục gốc. Đánh giá: Cơ hội, Thách thức, Lĩnh vực nổi bật, Điểm 0--10 và ★.",
+        "tieu_han": "Xác định cung Tiểu hạn → Đánh giá tinh hệ bản cung → Kết hợp Đại vận → Kết hợp Lưu niên → Tổng hợp sự kiện năm.",
+        "luu_nien": "Xét Lưu Thái Tuế, Lưu Lộc Tồn, Lưu Kình Dương, Lưu Đà La, Lưu Thiên Mã, Lưu Đào Hoa, Lưu Hồng Loan, Lưu Thiên Khốc, Lưu Thiên Hư, Lưu Tứ Hóa. (Không được dùng sao lưu để phủ định hoàn toàn lá số gốc)."
+      },
+      "anti_error_rules": [
+        "Không luận Tiểu hạn trước Đại vận.",
+        "Không dùng Lưu niên thay thế lá số gốc.",
+        "Không kết luận chỉ từ một sao lưu.",
+        "Khi cát và hung cùng xuất hiện phải xác định yếu tố chi phối chính."
+      ],
+      "output_components": [
+        "Đánh giá Đại vận",
+        "Đánh giá năm",
+        "3--5 cơ hội nổi bật",
+        "3--5 rủi ro nổi bật",
+        "Khuyến nghị hành động"
+      ]
+    },
+    {
+      "chapter_id": 7,
+      "title": "CHƯƠNG 07 -- QUY TẮC ỨNG KỲ VÀ DỰ ĐOÁN THỜI ĐIỂM",
+      "goal": "Chuẩn hóa phương pháp xác định thời điểm dễ phát sinh sự kiện dựa trên lá số gốc, Đại vận, Tiểu hạn, Lưu niên và Lưu nguyệt.",
+      "probability_levels": {
+        "rat_cao": "Nhiều yếu tố đồng thời xác nhận.",
+        "cao": "Đa số yếu tố xác nhận.",
+        "trung_binh": "Có cả cát và hung.",
+        "thap": "Ít dấu hiệu hoặc mâu thuẫn."
+      },
+      "ung_ky_template": [
+        "Chủ đề luận (công việc, hôn nhân, tài lộc, sức khỏe...)",
+        "Cung liên quan & Dấu hiệu",
+        "Sao tác động",
+        "Đánh giá theo tầng: Đại vận, Tiểu hạn, Lưu niên, Lưu nguyệt",
+        "Thời điểm nổi bật",
+        "Xác suất",
+        "Khuyến nghị (Thời điểm thuận lợi, Thời điểm cần thận trọng, Nguyên nhân, Mức độ tin cậy)"
+      ],
+      "anti_error_rules": [
+        "Không khẳng định tuyệt đối khi thiếu dữ liệu.",
+        "Không dùng một sao để dự đoán thời điểm.",
+        "Không bỏ qua ảnh hưởng của Đại vận.",
+        "Nếu nhiều trường phái có cách hiểu khác nhau, phải nêu rõ."
+      ]
+    },
+    {
+      "chapter_id": 8,
+      "title": "CHƯƠNG 08 -- HỆ THỐNG CHẤM ĐIỂM VÀ ĐÁNH GIÁ LÁ SỐ",
+      "goal": "Thiết lập cơ chế chấm điểm thống nhất để AI đánh giá mức độ cát -- hung của từng cung, từng giai đoạn vận hạn và toàn bộ lá số.",
+      "weights": {
+        "chinh_tinh": "30%",
+        "mieu_vuong_dac_ham": "10%",
+        "phu_tinh_cat_tinh": "15%",
+        "sat_tinh_bai_tinh": "15%",
+        "tam_phuong_tu_chinh": "10%",
+        "xung_chieu_giap_cung": "5%",
+        "tu_hoa": "5%",
+        "tuan_triet": "5%",
+        "van_han": "5%"
+      },
+      "score_scale": {
+        "9.0--10.0": "★★★★★ Xuất sắc",
+        "8.0--8.9": "★★★★☆ Rất tốt",
+        "6.5--7.9": "★★★☆☆ Khá",
+        "5.0--6.4": "★★☆☆☆ Trung bình",
+        "under_5.0": "★☆☆☆☆ Yếu"
+      },
+      "rules": [
+        "Không chấm điểm chỉ dựa trên một sao; điểm số phải phản ánh toàn bộ tinh hệ và bối cảnh.",
+        "Chấm riêng: 12 cung, Đại vận, Tiểu hạn, Lưu niên, Lưu nguyệt.",
+        "Mỗi kết luận bắt buộc nêu: Điểm số, Căn cứ chấm điểm, Các sao quyết định, Yếu tố cứu giải hoặc phá cách, Khuyến nghị.",
+        "Chống sai: Không suy diễn từ điểm số. Không để điểm thay thế phần luận giải. Nếu dữ liệu mâu thuẫn, phải giải thích trước khi chấm điểm."
+      ]
+    },
+    {
+      "chapter_id": 9,
+      "title": "CHƯƠNG 09 -- QUY TẮC TRÍCH DẪN BOOKS_CACHE VÀ HỢP NHẤT TRI THỨC",
+      "workflow": [
+        "1. Nhận diện quy tắc cần tra cứu",
+        "2. Tìm câu phú hoặc lý thuyết phù hợp",
+        "3. Đối chiếu tinh hệ thực tế",
+        "4. Kiểm tra ngoại lệ",
+        "5. Kết luận"
+      ],
+      "source_priority": [
+        "1. BOOKS_CACHE",
+        "2. Câu phú cổ",
+        "3. Quy tắc tinh hệ",
+        "4. Cách cục",
+        "5. Ma trận suy luận",
+        "6. Ngoại lệ"
+      ],
+      "citation_format": "[Trích sách: Tên sách -- Tác giả -- Chương/Mục -- Câu phú hoặc lý thuyết]",
+      "no_data_statement": "Không tìm thấy tài liệu phù hợp trong BOOKS_CACHE. Phần dưới đây là suy luận dựa trên hệ thống quy tắc Tử Vi.",
+      "prohibitions": [
+        "Bịa câu phú",
+        "Gán sai tác giả",
+        "Trích dẫn khi không có dữ liệu",
+        "Giả định có nguồn",
+        "Sử dụng câu phú để kết luận độc lập"
+      ]
+    },
+    {
+      "chapter_id": 10,
+      "title": "CHƯƠNG 10 -- QUY TRÌNH KIỂM SOÁT CHẤT LƯỢNG",
+      "checklist": [
+        "Đủ 12 cung.",
+        "Đã xét Miếu--Vượng--Đắc--Hãm.",
+        "Đã xét Tam phương Tứ chính, Xung chiếu, Giáp cung, Tuần/Triệt, Tứ Hóa.",
+        "Đã xét Đại vận, Tiểu hạn, Lưu niên.",
+        "Có trích dẫn BOOKS_CACHE (nếu có).",
+        "Đã giải thích và xử lý mâu thuẫn (nếu hai kết luận trái ngược, xác định nguyên nhân, kiểm tra trọng số, ưu tiên quy tắc cấp cao hơn)."
+      ],
+      "quality_criteria": [
+        "Chính xác",
+        "Có căn cứ",
+        "Có trích dẫn",
+        "Không bỏ sót bước",
+        "Không suy diễn vô căn cứ",
+        "Có giải thích ngoại lệ"
+      ]
+    },
+    {
+      "chapter_id": 11,
+      "title": "CHƯƠNG 11 -- CHUẨN HÓA ĐẦU RA BÁO CÁO",
+      "report_structure": [
+        "1. Thông tin lá số.",
+        "2. Tổng quan Mệnh -- Thân.",
+        "3. Cách cục và tinh hệ.",
+        "4. Phân tích đầy đủ 12 cung.",
+        "5. Đại vận hiện tại.",
+        "6. Tiểu hạn năm.",
+        "7. Lưu Tứ Hóa và sao lưu.",
+        "8. Dự đoán 12 tháng.",
+        "9. Tổng hợp ưu điểm -- nhược điểm.",
+        "10. Khuyến nghị cải vận."
+      ],
+      "statement_requirements": [
+        "Hiện tượng",
+        "Nguyên nhân",
+        "Các sao liên quan",
+        "Điều kiện trợ lực/phá cách",
+        "Ảnh hưởng thực tế",
+        "Trích BOOKS_CACHE (nếu có)",
+        "Mức độ tin cậy"
+      ],
+      "final_summary_table": [
+        "Điểm từng cung",
+        "Điểm vận hạn",
+        "Cách cục nổi bật",
+        "Rủi ro chính",
+        "Cơ hội chính",
+        "Kết luận"
+      ]
+    },
+    {
+      "chapter_id": 12,
+      "title": "CHƯƠNG 12 -- NGOẠI LỆ VÀ XỬ LÝ MÂU THUẪN NÂNG CAO",
+      "conflict_priority": [
+        "1. Cấu trúc lá số gốc",
+        "2. Chính tinh",
+        "3. Miếu/Vượng/Đắc/Bình/Hãm",
+        "4. Cách cục",
+        "5. Tam phương Tứ chính",
+        "6. Xung chiếu",
+        "7. Giáp cung",
+        "8. Phụ tinh",
+        "9. Tứ Hóa",
+        "10. Tuần/Triệt",
+        "11. Đại vận",
+        "12. Tiểu hạn",
+        "13. Lưu niên"
+      ],
+      "evaluation_levels": [
+        "Hoàn toàn phát huy",
+        "Phát huy mạnh",
+        "Phát huy một phần",
+        "Bị suy giảm",
+        "Bị vô hiệu"
+      ],
+      "exception_template": [
+        "Nhận định",
+        "Căn cứ (Chính tinh, Phụ tinh, Cách cục, Tam phương, Vận hạn)",
+        "Ngoại lệ",
+        "Kết luận",
+        "Mức độ tin cậy"
+      ]
+    },
+    {
+      "chapter_id": 13,
+      "title": "CHƯƠNG 13 -- KIẾN TRÚC SUY LUẬN ĐA TẦNG",
+      "reasoning_layers": [
+        "Tầng 1: Kiểm tra dữ liệu đầu vào.",
+        "Tầng 2: Phân tích Mệnh -- Thân.",
+        "Tầng 3: Phân tích tinh hệ từng cung.",
+        "Tầng 4: Phân tích Tam phương, Xung chiếu, Giáp cung.",
+        "Tầng 5: Nhận diện cách cục.",
+        "Tầng 6: Đánh giá Đại vận -- Tiểu hạn -- Lưu niên.",
+        "Tầng 7: Đối chiếu BOOKS_CACHE.",
+        "Tầng 8: Tổng hợp và xếp hạng kết luận."
+      ],
+      "evidence_ranking": [
+        "1. Lá số gốc",
+        "2. Chính tinh",
+        "3. Cách cục",
+        "4. Tam phương Tứ chính",
+        "5. Phụ tinh",
+        "6. Tứ Hóa",
+        "7. Tuần/Triệt",
+        "8. Đại vận",
+        "9. Tiểu hạn",
+        "10. Lưu niên",
+        "11. BOOKS_CACHE"
+      ]
+    },
+    {
+      "chapter_id": 14,
+      "title": "CHƯƠNG 14 -- HỆ THỐNG TỰ ĐÁNH GIÁ VÀ CẢI THIỆN SUY LUẬN",
+      "quality_evaluation_scale": {
+        "A_do_day_du": "0--10",
+        "B_do_chinh_xac_logic": "0--10",
+        "C_kha_nang_giai_thich": "0--10",
+        "D_do_tin_cay": "★ đến ★★★★★"
+      },
+      "final_output_structure": [
+        "1. Tóm tắt",
+        "2. Chuỗi suy luận",
+        "3. Bằng chứng",
+        "4. Kết luận",
+        "5. Độ tin cậy",
+        "6. Khuyến nghị cải vận"
+      ]
+    }
+  ]
+}
