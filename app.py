@@ -22,7 +22,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Hiển thị cưỡng chế nút đóng/mở Sidebar */
+    /* Nút đóng/mở Sidebar */
     button[data-testid="stSidebarCollapseButton"],
     button[data-testid="baseButton-header"],
     div[data-testid="stSidebarNav"] button,
@@ -36,9 +36,7 @@ st.markdown(
         top: 0.5rem !important;
         left: 0.5rem !important;
     }
-    /* Ẩn Toolbar và Footer mặc định */
-    div[data-testid="stToolbar"] { visibility: hidden; }
-    footer { visibility: hidden; }
+    
     .stApp { background-color: #0e1117; }
     
     /* Style tiêu đề chính */
@@ -296,50 +294,56 @@ with tab_main:
 
                         if response and response.text:
                             st.session_state.analysis_result = response.text
-                            # Làm mới lịch sử chat khi có lượt luận giải mới
                             st.session_state.chat_messages = []
                             st.success("✅ Đã hoàn tất luận giải theo đúng bộ quy tắc `tu_vi_engine.json`!")
 
                     except Exception as e:
                         st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
-        # Hiển thị kết quả bài luận giải
+        # Hiển thị bài luận giải nếu có
         if st.session_state.analysis_result:
             st.markdown(st.session_state.analysis_result)
+        else:
+            st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý theo quy tắc `tu_vi_engine.json`.")
 
-            st.markdown("---")
-            st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
-            st.caption("Bạn có thể đặt câu hỏi chi tiết về các cung, đại hạn, tiểu hạn hoặc nhờ giải thích thêm các câu phú trên lá số.")
+        # --- KHUNG CHAT LUÔN HIỂN THỊ ---
+        st.markdown("---")
+        st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
+        st.caption("Bạn có thể đặt câu hỏi chi tiết về lá số, các cung, đại hạn/tiểu hạn hoặc nhờ giải thích thêm.")
 
-            # Hiển thị lịch sử trò chuyện
-            for msg in st.session_state.chat_messages:
-                with st.chat_message(msg["role"]):
-                    st.markdown(msg["content"])
+        # Hiển thị lịch sử trò chuyện
+        for msg in st.session_state.chat_messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-            # Khung nhập câu hỏi người dùng
-            user_question = st.chat_input("Nhập câu hỏi của bạn cho AI (Ví dụ: Hạn năm nay cần lưu ý điều gì nhất?)...")
-            if user_question:
-                # Hiển thị tin nhắn người dùng
+        # Khung nhập câu hỏi
+        user_question = st.chat_input("Nhập câu hỏi của bạn cho AI (Ví dụ: Hạn năm nay cần lưu ý điều gì nhất?)...")
+        if user_question:
+            if not API_KEY:
+                st.error("❌ Chưa cấu hình GEMINI_API_KEY!")
+            else:
+                # Lưu câu hỏi người dùng
                 st.session_state.chat_messages.append({"role": "user", "content": user_question})
                 with st.chat_message("user"):
                     st.markdown(user_question)
 
-                # AI xử lý câu hỏi dựa trên ngữ cảnh luận giải trước đó
+                # AI trả lời
                 with st.chat_message("assistant"):
                     with st.spinner("🔮 AI đang suy luận câu trả lời..."):
                         try:
                             client = genai.Client(api_key=API_KEY)
                             
+                            analysis_context = st.session_state.analysis_result or "Chưa có bài luận giải chi tiết. Hãy dựa vào quy tắc tu_vi_engine.json để trả lời."
+
                             system_instruction_chat = (
-                                "Bạn là chuyên gia Tử Vi Đẩu Số. Bạn đang trò chuyện với người xem lá số.\n"
+                                "Bạn là chuyên gia Tử Vi Đẩu Số.\n"
                                 "Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n"
-                                f"--- START ANALYSIS ---\n{st.session_state.analysis_result}\n--- END ANALYSIS ---\n\n"
+                                f"--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\n"
                                 "BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n"
-                                f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000]}\n```\n\n"
+                                f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ''}\n```\n\n"
                                 "Hãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi. Văn phong lịch sự, thấu đáo."
                             )
 
-                            # Xây dựng cuộc hội thoại
                             conversation = []
                             for m in st.session_state.chat_messages:
                                 conversation.append(f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}")
@@ -347,7 +351,7 @@ with tab_main:
                             chat_prompt = "\n".join(conversation)
 
                             chat_response = client.models.generate_content(
-                                model="gemini-3.6-flash",
+                                model="gemini-2.5-flash",
                                 contents=chat_prompt,
                                 config=types.GenerateContentConfig(
                                     system_instruction=system_instruction_chat,
@@ -363,8 +367,6 @@ with tab_main:
                                 st.error("Không nhận được phản hồi từ AI.")
                         except Exception as e:
                             st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
-        else:
-            st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý theo quy tắc `tu_vi_engine.json`.")
 
 # ==========================================
 # TAB 2: QUY TẮC CHÍNH
