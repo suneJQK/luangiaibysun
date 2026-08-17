@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import json
+import time
 from pathlib import Path
 from datetime import datetime
 import streamlit as st
@@ -90,6 +91,10 @@ BASE_DIR = Path(__file__).parent
 ENGINE_FILE = BASE_DIR / "tu_vi_engine.json"
 BOOKS_FILE = BASE_DIR / "books_cache.json"
 PROMPT_DIR = BASE_DIR / "system_prompts"
+
+@st.cache_resource
+def get_gemini_client(api_key):
+    return genai.Client(api_key=api_key)
 
 @st.cache_data(ttl=3600)
 def load_system_prompt():
@@ -201,8 +206,8 @@ with st.sidebar:
     if books_text:
         st.caption("📚 Kho tham khảo: **Đã nạp ngầm**")
 
-# Giao diện chính chia làm 2 cột
-col_input, col_output = st.columns([1, 1.3], gap="large")
+# Giao diện chính chia làm 2 cột độc lập
+col_input, col_output = st.columns([1, 1.5], gap="large")
 
 with col_input:
     st.subheader("📸 Tải Lên & Cấu Hình Lá Số")
@@ -264,7 +269,7 @@ with col_input:
             with st.chat_message("assistant"):
                 with st.spinner("🔮 AI đang suy luận câu trả lời..."):
                     try:
-                        client = genai.Client(api_key=API_KEY)
+                        client = get_gemini_client(API_KEY)
                         analysis_context = st.session_state.get("analysis_result", "Chưa có bài luận giải chi tiết.")
                         engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
 
@@ -305,7 +310,7 @@ with col_output:
         else:
             with st.spinner("⚡ AI đang nạp system prompt & tu_vi_engine.json để thực thi..."):
                 try:
-                    client = genai.Client(api_key=API_KEY)
+                    client = get_gemini_client(API_KEY)
                     engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
                     
                     combined_system_instruction = f"{main_system_prompt}\n\n=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n```json\n{engine_json_str}\n```"
@@ -322,28 +327,43 @@ with col_output:
                         content_payload.append(crop_img)
                     content_payload.append(user_prompt)
 
-                    response = client.models.generate_content(
-                        model="gemini-3.6-flash",
-                        contents=content_payload,
-                        config=types.GenerateContentConfig(
-                            system_instruction=combined_system_instruction,
-                            temperature=0.15
-                        )
-                    )
+                    # Cơ chế thử lại tối đa 3 lần nếu gặp lỗi quá tải 503
+                    response = None
+                    for attempt in range(3):
+                        try:
+                            response = client.models.generate_content(
+                                model="gemini-3.6-flash",
+                                contents=content_payload,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=combined_system_instruction,
+                                    temperature=0.15
+                                )
+                            )
+                            break
+                        except Exception as api_err:
+                            if "503" in str(api_err) and attempt < 2:
+                                time.sleep(3) # Chờ 3 giây rồi thử lại
+                                continue
+                            else:
+                                raise api_err
 
                     if response and response.text:
                         st.session_state.analysis_result = response.text
                         st.session_state.chat_messages = []
                         st.success("✅ Đã hoàn tất luận giải!")
+                        st.rerun()
                 except Exception as e:
                     st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
     st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động (Cố Định Khung)</div>', unsafe_allow_html=True)
     
-    # Khung cố định kết quả luận giải
+    # Khung cố định kết quả luận giải tách biệt hoàn toàn
     st.markdown('<div class="scrollable-result-container">', unsafe_allow_html=True)
-    if st.session_state.analysis_result:
+    if st.session_state.get("analysis_result"):
         st.markdown(f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>', unsafe_allow_html=True)
+        if st.button("🧹 Xóa kết quả"):
+            st.session_state.analysis_result = None
+            st.rerun()
     else:
         st.info("👈 Hãy tải lên ảnh lá số và nhấn nút 'BẮT ĐẦU LUẬN GIẢI' ở cột bên trái để hiển thị kết quả tại đây.")
     st.markdown('</div>', unsafe_allow_html=True)
