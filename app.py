@@ -165,7 +165,7 @@ def upload_to_github(uploaded_file):
             repo.update_file(contents.path, commit_message, file_content, contents.sha)
         except GithubException:
             repo.create_file(file_path, commit_message, file_content)
-        return True, f"https://github.com/{GITHUB_REPO}/blob/main/{file_path}"
+        return True, f"[https://github.com/](https://github.com/){GITHUB_REPO}/blob/main/{file_path}"
     except Exception as e:
         return False, str(e)
 
@@ -191,109 +191,4 @@ def crop_12_cung_overlap(img, top_cut=0, bottom_cut=3, side_cut=0, overlap_px=15
     cropped_cungs = {}
     for cung_name, (col, row) in grid_map.items():
         left = max(0, left_start + col * w_step - overlap_px)
-        top = max(0, top_start + row * h_step - overlap_px)
-        right = min(width, left_start + (col + 1) * w_step + overlap_px)
-        bottom = min(height, top_start + (row + 1) * h_step + overlap_px)
-        cropped_cungs[cung_name] = img.crop((left, top, right, bottom))
-    return cropped_cungs
-
-# --- 9. GIAO DIỆN CHÍNH & NẠP DỮ LIỆU ---
-st.markdown('<div class="main-header">☯️ TỬ VI ĐẨU SỐ LUẬN GIẢI TỰ ĐỘNG</div>', unsafe_allow_html=True)
-
-main_system_prompt, prompt_err = load_system_prompt()
-engine_data, engine_err = load_engine_rules()
-books_text, books_err = load_books_reference()
-
-# --- 10. SIDEBAR ĐIỀU HƯỚNG ---
-with st.sidebar:
-    st.image("https://img.icons8.com/color/96/yin-yang.png", width=64)
-    st.title("⚙️ Cấu Hình Luận Giải")
-    selected_year = st.number_input("📅 Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1)
-    user_note = st.text_area(
-        "📝 Ghi chú / Yêu cầu thêm:",
-        value="Yêu cầu AI áp dụng nghiêm ngặt quy tắc Tử Vi và dẫn chứng thêm câu phú từ kho sách.",
-        height=100,
-    )
-    btn_sidebar_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", key="btn_sidebar", use_container_width=True)
-    
-    st.markdown("---")
-    st.subheader("🔌 Trạng Thái Dữ Liệu")
-    
-    if API_KEY:
-        st.caption("✅ Gemini API: **Đã kết nối**")
-    else:
-        st.caption("❌ Gemini API: **Chưa cấu hình KEY**")
-
-    # Chỉ thể hiện trạng thái của System Prompt (Đã ẩn trạng thái tu_vi_engine và books_cache)
-    if not prompt_err:
-        st.caption("📜 System Prompt: **`system_prompt.txt` (Đã nạp)**")
-    else:
-        st.caption(f"⚠️ System Prompt: **{prompt_err}**")
-
-# --- 11. PHÂN CHIA TABS ---
-tab_main, tab_sys_prompt, tab_contact = st.tabs([
-    "🔮 Luận Giải Lá Số",
-    "⚙️ System Prompt (system_prompt.txt)",
-    "🔗 Liên Hệ & Hỗ Trợ"
-])
-
-# ==========================================
-# TAB 1: LUẬN GIẢI LÁ SỐ
-# ==========================================
-with tab_main:
-    col_input, col_output = st.columns([1, 1.3], gap="large")
-
-    with col_input:
-        st.subheader("📸 Upload & Căn Chỉnh Lá Số")
-        uploaded_file = st.file_uploader("Tải lên ảnh lá số:", type=["jpg", "jpeg", "png", "webp"])
-        cropped_dict = {}
-
-        if uploaded_file:
-            if st.session_state.get("last_uploaded") != uploaded_file.name:
-                with st.spinner("🐙 Đang lưu bản sao lá số..."):
-                    gh_success, gh_msg = upload_to_github(uploaded_file)
-                    if gh_success:
-                        st.toast("✅ Đã lưu lá số an toàn!", icon="✅")
-                    st.session_state.last_uploaded = uploaded_file.name
-
-            image = Image.open(uploaded_file).convert("RGB")
-
-            with st.expander("🛠️ Căn chỉnh lề & Vạch ngăn Tuần/Triệt", expanded=False):
-                top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
-                bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
-                side_val = st.slider("↔️ Bỏ lề TRÁI/PHẢI (%):", 0, 15, 0, 1)
-                overlap_val = st.slider("🔍 Vùng phủ vạch ngăn (Px):", 5, 40, 15, 1)
-
-            st.image(image, caption="Lá số đã tải lên", use_container_width=True)
-            cropped_dict = crop_12_cung_overlap(image, top_val, bottom_val, side_val, overlap_val)
-
-            with st.expander("🔍 Xem mảnh cắt 12 Cung"):
-                cols = st.columns(3)
-                for idx, (name, crop_img) in enumerate(cropped_dict.items()):
-                    cols[idx % 3].image(crop_img, caption=f"Cung {name}", use_container_width=True)
-
-        btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", key="btn_main", use_container_width=True)
-
-    with col_output:
-        st.subheader("📜 Kết Quả Luận Giải Tự Động")
-
-        if "analysis_result" not in st.session_state:
-            st.session_state.analysis_result = None
-        if "chat_messages" not in st.session_state:
-            st.session_state.chat_messages = []
-
-        if btn_sidebar_analyze or btn_main_analyze:
-            if not uploaded_file:
-                st.warning("⚠️ Vui lòng tải lên ảnh lá số trước!")
-            elif not API_KEY:
-                st.error("❌ Chưa cấu hình GEMINI_API_KEY trong Secrets!")
-            else:
-                with st.spinner("⚡ AI đang nạp dữ liệu và tiến hành luận giải..."):
-                    try:
-                        client = genai.Client(api_key=API_KEY)
-
-                        # Sử dụng f-string ba dấu ngoặc kép để tránh lỗi SyntaxError đối với ký tự \n
-                        if engine_data:
-                            engine_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:250000]
-                            engine_context = f"""```json
-{engine_str}
+        top = max(0, top_start + row * h
