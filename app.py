@@ -277,6 +277,7 @@ with tab_main:
                     try:
                         client = genai.Client(api_key=API_KEY)
 
+                        # Kết hợp Prompt từ file system_prompt.txt cùng file cấu hình JSON
                         combined_system_instruction = (
                             f"{main_system_prompt}\n\n"
                             "=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n"
@@ -320,6 +321,7 @@ with tab_main:
                     except Exception as e:
                         st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
+        # Hiển thị bài luận giải
         if st.session_state.analysis_result:
             st.markdown(st.session_state.analysis_result)
         else:
