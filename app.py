@@ -274,7 +274,7 @@ with col_input:
                         chat_prompt = "\n".join(conversation)
 
                         chat_response = client.models.generate_content(
-                            model="gemini-2.5-flash",
+                            model="gemini-3.6-flash",
                             contents=chat_prompt,
                             config=types.GenerateContentConfig(
                                 system_instruction=chat_system_instruction,
@@ -323,7 +323,7 @@ with col_output:
                     content_payload.append(user_prompt)
 
                     response = client.models.generate_content(
-                        model="gemini-2.5-flash",
+                        model="gemini-3.6-flash",
                         contents=content_payload,
                         config=types.GenerateContentConfig(
                             system_instruction=combined_system_instruction,
