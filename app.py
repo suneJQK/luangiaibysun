@@ -292,5 +292,7 @@ with tab_main:
                     try:
                         client = genai.Client(api_key=API_KEY)
 
-                        # Kết hợp Prompt từ file system_prompt.txt cùng file cấu hình JSON ngầm
-                        engine_context = f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:250000]}\n
+                        # Xử lý chuỗi JSON ra biến riêng để tránh lỗi SyntaxError f-string
+                        if engine_data:
+                            engine_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:250000]
+                            engine_context = f"```json\n{engine_str}\n
