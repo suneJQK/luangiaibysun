@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+ #!/usr/bin/env python3
 import os
 import json
 from pathlib import Path
@@ -9,7 +9,6 @@ from github import Github, GithubException
 from google import genai
 from google.genai import types
 
-# --- 1. CẤU HÌNH TRANG STREAMLIT ---
 st.set_page_config(
     page_title="Tử Vi Đẩu Số - Luận Giải Tự Động Engine",
     page_icon="☯️",
@@ -17,7 +16,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# --- 2. TÙY CHỈNH GIAO DIỆN (CSS) ---
 st.markdown(
     """
     <style>
@@ -79,7 +77,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- 3. LẤY SECRETS & ĐƯỜNG DẪN THƯ MỤC ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", os.environ.get("GITHUB_REPO", ""))
@@ -89,7 +86,6 @@ ENGINE_FILE = BASE_DIR / "tu_vi_engine.json"
 BOOKS_FILE = BASE_DIR / "books_cache.json"
 PROMPT_DIR = BASE_DIR / "system_prompts"
 
-# --- 4. HÀM NẠP SYSTEM PROMPT ---
 @st.cache_data(ttl=3600)
 def load_system_prompt():
     if not PROMPT_DIR.exists():
@@ -107,7 +103,6 @@ def load_system_prompt():
     except Exception as e:
         return "", f"Lỗi đọc file {target_file.name}: {str(e)}"
 
-# --- 5. HÀM NẠP BỘ QUY TẮC CHÍNH ---
 @st.cache_data(ttl=3600)
 def load_engine_rules():
     if not ENGINE_FILE.exists():
@@ -118,7 +113,6 @@ def load_engine_rules():
     except Exception as e:
         return None, f"Lỗi cấu trúc file {ENGINE_FILE.name}: {str(e)}"
 
-# --- 6. HÀM NẠP KHO SÁCH THAM KHẢO ---
 @st.cache_data(ttl=3600)
 def load_books_reference():
     if not BOOKS_FILE.exists():
@@ -134,7 +128,6 @@ def load_books_reference():
     except Exception as e:
         return None, f"Lỗi đọc file {BOOKS_FILE.name}: {str(e)}"
 
-# --- 7. HÀM LƯU ẢNH LÊN GITHUB ---
 def upload_to_github(uploaded_file):
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "Thiếu 'GITHUB_TOKEN' hoặc 'GITHUB_REPO' trong Secrets."
@@ -155,7 +148,6 @@ def upload_to_github(uploaded_file):
     except Exception as e:
         return False, str(e)
 
-# --- 8. HÀM CẮT 12 CUNG LÁ SỐ ---
 def crop_12_cung_overlap(img, top_cut=0, bottom_cut=3, side_cut=0, overlap_px=15):
     width, height = img.size
     left_start = width * (side_cut / 100)
@@ -183,14 +175,12 @@ def crop_12_cung_overlap(img, top_cut=0, bottom_cut=3, side_cut=0, overlap_px=15
         cropped_cungs[cung_name] = img.crop((left, top, right, bottom))
     return cropped_cungs
 
-# --- 9. GIAO DIỆN CHÍNH & NẠP DỮ LIỆU ---
 st.markdown('<div class="main-header">☯️ TỬ VI ĐẨU SỐ LUẬN GIẢI TỰ ĐỘNG</div>', unsafe_allow_html=True)
 
 main_system_prompt, prompt_err = load_system_prompt()
 engine_data, engine_err = load_engine_rules()
 books_text, books_err = load_books_reference()
 
-# --- 10. SIDEBAR ĐIỀU HƯỚNG ---
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/yin-yang.png", width=64)
     st.title("⚙️ Cấu Hình Luận Giải")
@@ -225,7 +215,6 @@ with st.sidebar:
     else:
         st.caption("⚠️ Kho tham khảo: **Không có (Tùy chọn)**")
 
-# --- 11. PHÂN CHIA TABS ---
 tab_main, tab_sys_prompt, tab_rules, tab_books, tab_contact = st.tabs([
     "🔮 Luận Giải Lá Số",
     "⚙️ System Prompt (Thư mục)",
@@ -234,9 +223,6 @@ tab_main, tab_sys_prompt, tab_rules, tab_books, tab_contact = st.tabs([
     "🔗 Liên Hệ & Hỗ Trợ"
 ])
 
-# ==========================================
-# TAB 1: LUẬN GIẢI LÁ SỐ
-# ==========================================
 with tab_main:
     col_input, col_output = st.columns([1, 1.3], gap="large")
 
@@ -334,7 +320,6 @@ with tab_main:
                     except Exception as e:
                         st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
-        # --- ĐÓNG KHUNG RIÊNG BIỆT BẰNG CONTAINER AN TOÀN ---
         with st.container(border=True):
             st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động</div>', unsafe_allow_html=True)
             
@@ -346,7 +331,6 @@ with tab_main:
             else:
                 st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý.")
 
-        # --- KHUNG CHAT TƯƠNG TÁC ---
         st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
         st.caption("Bạn có thể đặt câu hỏi chi tiết về lá số, các cung, đại hạn/tiểu hạn hoặc nhờ giải thích thêm.")
 
