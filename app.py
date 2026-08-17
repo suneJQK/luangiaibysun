@@ -55,14 +55,6 @@ st.markdown(
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(246, 211, 101, 0.4);
     }
-    .analysis-container-box {
-        background-color: #161b22;
-        border: 2px solid #d4af37;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 8px 24px rgba(212, 175, 55, 0.15);
-        margin-bottom: 24px;
-    }
     .analysis-header-title {
         font-size: 1.3rem;
         font-weight: 700;
@@ -304,4 +296,86 @@ with tab_main:
                             "=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n"
                             "```json\n"
                             f"{engine_json_str}\n"
-                            "
+                            "```"
+                        )
+
+                        ref_books_context = ""
+                        if books_text:
+                            ref_books_context = f"\n\nKHO SÁCH & PHÚ THAM KHẢO BỔ SUNG (BOOKS REFERENCE):\n{books_text[:100000]}"
+
+                        user_prompt = (
+                            "Hãy đọc lá số Tử Vi từ các hình ảnh được cung cấp.\n"
+                            f"- Năm luận Tiểu Hạn: {selected_year}\n"
+                            f"- Yêu cầu thêm từ người dùng: {user_note}\n\n"
+                            f"{ref_books_context}\n\n"
+                            "Hãy tiến hành nhận diện 12 cung, lập ma trận sao và xuất báo cáo luận giải chi tiết theo đúng định dạng được quy định."
+                        )
+
+                        content_payload = [image]
+                        for cung_name, crop_img in cropped_dict.items():
+                            content_payload.append(f"Mảnh cắt Cung {cung_name}:")
+                            content_payload.append(crop_img)
+                        content_payload.append(user_prompt)
+
+                        response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=content_payload,
+                            config=types.GenerateContentConfig(
+                                system_instruction=combined_system_instruction,
+                                temperature=0.15
+                            )
+                        )
+
+                        if response and response.text:
+                            st.session_state.analysis_result = response.text
+                            st.session_state.chat_messages = []
+                            st.success("✅ Đã hoàn tất luận giải!")
+
+                    except Exception as e:
+                        st.error(f"❌ Lỗi xử lý AI Engine: {e}")
+
+        # --- ĐÓNG KHUNG RIÊNG BIỆT BẰNG CONTAINER AN TOÀN ---
+        with st.container(border=True):
+            st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động</div>', unsafe_allow_html=True)
+            
+            if st.session_state.analysis_result:
+                st.markdown(
+                    f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý.")
+
+        # --- KHUNG CHAT TƯƠNG TÁC ---
+        st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
+        st.caption("Bạn có thể đặt câu hỏi chi tiết về lá số, các cung, đại hạn/tiểu hạn hoặc nhờ giải thích thêm.")
+
+        for msg in st.session_state.chat_messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        user_question = st.chat_input("Nhập câu hỏi của bạn cho AI (Ví dụ: Hạn năm nay cần lưu ý điều gì nhất?)...")
+        if user_question:
+            if not API_KEY:
+                st.error("❌ Chưa cấu hình GEMINI_API_KEY!")
+            else:
+                st.session_state.chat_messages.append({"role": "user", "content": user_question})
+                with st.chat_message("user"):
+                    st.markdown(user_question)
+
+                with st.chat_message("assistant"):
+                    with st.spinner("🔮 AI đang suy luận câu trả lời..."):
+                        try:
+                            client = genai.Client(api_key=API_KEY)
+                            
+                            analysis_context = st.session_state.analysis_result or "Chưa có bài luận giải chi tiết."
+                            engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
+
+                            chat_system_instruction = (
+                                f"{main_system_prompt}\n\n"
+                                "Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n"
+                                f"--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\n"
+                                "BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n"
+                                "```json\n"
+                                f"{engine_json_chat_str}\n"
+                                "
