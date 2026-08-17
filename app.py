@@ -183,7 +183,6 @@ with st.sidebar:
     else:
         st.caption("❌ Gemini API: **Chưa cấu hình KEY**")
 
-    # Kiểm tra trạng thái nạp file
     if engine_data:
         st.caption("📜 Quy tắc chính: **`tu_vi_engine.json` (Đã nạp)**")
     else:
@@ -244,6 +243,8 @@ with tab_main:
 
         if "analysis_result" not in st.session_state:
             st.session_state.analysis_result = None
+        if "chat_messages" not in st.session_state:
+            st.session_state.chat_messages = []
 
         if btn_sidebar_analyze or btn_main_analyze:
             if not uploaded_file:
@@ -257,7 +258,6 @@ with tab_main:
                     try:
                         client = genai.Client(api_key=API_KEY)
 
-                        # Ép AI sử dụng tu_vi_engine.json làm bộ quy tắc cốt lõi
                         system_instruction_text = (
                             "Bạn là Engine Suy Luận Tử Vi Đẩu Số Chuyên Sâu.\n"
                             "BỘ QUY TẮC BẮT BUỘC THỰC THI CHÍNH (PRIMARY RULE ENGINE):\n"
@@ -265,7 +265,6 @@ with tab_main:
                             f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:250000]}\n```"
                         )
 
-                        # Nạp dữ liệu kho sách đính kèm nếu có
                         ref_books_context = ""
                         if books_text:
                             ref_books_context = (
@@ -286,9 +285,8 @@ with tab_main:
                             content_payload.append(crop_img)
                         content_payload.append(user_prompt)
 
-                        # Gọi API với cấu hình temperature thấp để tuân thủ quy tắc
                         response = client.models.generate_content(
-                            model="gemini-3.6-flash",
+                            model="gemini-2.5-flash",
                             contents=content_payload,
                             config=types.GenerateContentConfig(
                                 system_instruction=system_instruction_text,
@@ -298,14 +296,73 @@ with tab_main:
 
                         if response and response.text:
                             st.session_state.analysis_result = response.text
+                            # Làm mới lịch sử chat khi có lượt luận giải mới
+                            st.session_state.chat_messages = []
                             st.success("✅ Đã hoàn tất luận giải theo đúng bộ quy tắc `tu_vi_engine.json`!")
 
                     except Exception as e:
                         st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
-        # Hiển thị kết quả ra màn hình
+        # Hiển thị kết quả bài luận giải
         if st.session_state.analysis_result:
             st.markdown(st.session_state.analysis_result)
+
+            st.markdown("---")
+            st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
+            st.caption("Bạn có thể đặt câu hỏi chi tiết về các cung, đại hạn, tiểu hạn hoặc nhờ giải thích thêm các câu phú trên lá số.")
+
+            # Hiển thị lịch sử trò chuyện
+            for msg in st.session_state.chat_messages:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+
+            # Khung nhập câu hỏi người dùng
+            user_question = st.chat_input("Nhập câu hỏi của bạn cho AI (Ví dụ: Hạn năm nay cần lưu ý điều gì nhất?)...")
+            if user_question:
+                # Hiển thị tin nhắn người dùng
+                st.session_state.chat_messages.append({"role": "user", "content": user_question})
+                with st.chat_message("user"):
+                    st.markdown(user_question)
+
+                # AI xử lý câu hỏi dựa trên ngữ cảnh luận giải trước đó
+                with st.chat_message("assistant"):
+                    with st.spinner("🔮 AI đang suy luận câu trả lời..."):
+                        try:
+                            client = genai.Client(api_key=API_KEY)
+                            
+                            system_instruction_chat = (
+                                "Bạn là chuyên gia Tử Vi Đẩu Số. Bạn đang trò chuyện với người xem lá số.\n"
+                                "Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n"
+                                f"--- START ANALYSIS ---\n{st.session_state.analysis_result}\n--- END ANALYSIS ---\n\n"
+                                "BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n"
+                                f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000]}\n```\n\n"
+                                "Hãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi. Văn phong lịch sự, thấu đáo."
+                            )
+
+                            # Xây dựng cuộc hội thoại
+                            conversation = []
+                            for m in st.session_state.chat_messages:
+                                conversation.append(f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}")
+                            
+                            chat_prompt = "\n".join(conversation)
+
+                            chat_response = client.models.generate_content(
+                                model="gemini-3.6-flash",
+                                contents=chat_prompt,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=system_instruction_chat,
+                                    temperature=0.3
+                                )
+                            )
+
+                            if chat_response and chat_response.text:
+                                reply = chat_response.text
+                                st.markdown(reply)
+                                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+                            else:
+                                st.error("Không nhận được phản hồi từ AI.")
+                        except Exception as e:
+                            st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
         else:
             st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý theo quy tắc `tu_vi_engine.json`.")
 
