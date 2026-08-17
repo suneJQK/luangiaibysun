@@ -268,53 +268,7 @@ with col_input:
                             analysis_context = st.session_state.get("analysis_result", "Chưa có bài luận giải chi tiết.")
                             engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
 
-                            # Sử dụng "\n\n".join([...]) để tránh lỗi ngắt dòng trực tiếp
                             chat_system_instruction = "\n\n".join([
                                 str(main_system_prompt),
                                 "Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n--- START ANALYSIS ---\n" + str(analysis_context) + "\n--- END ANALYSIS ---",
-                                "BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n" + str(engine_json_chat_str) + "\n```",
-                                "Hãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
-                            ])
-
-                            conversation = [f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}" for m in st.session_state.chat_messages]
-                            chat_prompt = "\n".join(conversation)
-
-                            chat_response = client.models.generate_content(
-                                model="gemini-3.6-flash",
-                                contents=chat_prompt,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=chat_system_instruction,
-                                    temperature=0.3
-                                )
-                            )
-
-                            if chat_response and chat_response.text:
-                                reply = chat_response.text
-                                st.markdown(reply)
-                                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
-                                st.rerun()
-                            else:
-                                st.error("Không nhận được phản hồi từ AI.")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
-
-with col_output:
-    if "analysis_result" not in st.session_state:
-        st.session_state.analysis_result = None
-
-    if btn_main_analyze:
-        if "current_image" not in st.session_state:
-            st.warning("⚠️ Vui lòng mở phần cấu hình và tải lên ảnh lá số trước!")
-        elif not API_KEY:
-            st.error("❌ Chưa cấu hình GEMINI_API_KEY trong Secrets!")
-        elif not engine_data:
-            st.error("❌ Ứng dụng không thể chạy do thiếu file quy tắc `tu_vi_engine.json`!")
-        else:
-            with st.spinner("⚡ AI đang nạp system prompt & tu_vi_engine.json để thực thi..."):
-                try:
-                    client = get_gemini_client(API_KEY)
-                    engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
-                    
-                    combined_system_instruction = "\n\n".join([
-                        str(main_system_prompt),
-                        "=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n```json\n" + str(engine_json_str) + "\n
+                                "BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n" + str(engine_json_chat_str) + "\n
