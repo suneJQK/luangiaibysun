@@ -1,7 +1,6 @@
- #!/usr/bin/env python3
+#!/usr/bin/env python3
 import os
 import json
-import time
 from pathlib import Path
 from datetime import datetime
 import streamlit as st
@@ -22,7 +21,6 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Nút đóng/mở Sidebar */
     button[data-testid="stSidebarCollapseButton"],
     button[data-testid="baseButton-header"],
     div[data-testid="stSidebarNav"] button,
@@ -36,10 +34,7 @@ st.markdown(
         top: 0.5rem !important;
         left: 0.5rem !important;
     }
-    
     .stApp { background-color: #0e1117; }
-    
-    /* Style tiêu đề chính */
     .main-header {
         font-size: 2.2rem;
         font-weight: 700;
@@ -48,8 +43,6 @@ st.markdown(
         margin-bottom: 0.5rem;
         text-shadow: 0px 0px 10px rgba(246, 211, 101, 0.2);
     }
-    
-    /* Style nút bấm nổi bật */
     div.stButton > button[kind="primary"] {
         background: linear-gradient(90deg, #d4af37 0%, #f6d365 100%);
         color: #1a202c;
@@ -67,7 +60,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- 3. LẤY SECRETS & CẤU HÌNH ĐƯỜNG DẪN FILE ---
+# --- 3. LẤY SECRETS & ĐƯỜNG DẪN THƯ MỤC ---
 API_KEY = st.secrets.get("GEMINI_API_KEY", os.environ.get("GEMINI_API_KEY", ""))
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", os.environ.get("GITHUB_TOKEN", ""))
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", os.environ.get("GITHUB_REPO", ""))
@@ -75,38 +68,41 @@ GITHUB_REPO = st.secrets.get("GITHUB_REPO", os.environ.get("GITHUB_REPO", ""))
 BASE_DIR = Path(__file__).parent
 ENGINE_FILE = BASE_DIR / "tu_vi_engine.json"
 BOOKS_FILE = BASE_DIR / "books_cache.json"
-PROMPT_FILE = BASE_DIR / "system_prompts" / "system_instruction.txt"
+PROMPT_DIR = BASE_DIR / "system_prompts"  # Thư mục chứa system prompt
 
-# --- 4. HÀM NẠP SYSTEM PROMPT TỪ FILE RIÊNG ---
+# --- 4. HÀM NẠP SYSTEM PROMPT TỪ THƯ MỤC system_prompts ---
 @st.cache_data(ttl=3600)
 def load_system_prompt():
-    """Nạp file system_prompt.txt làm System Instruction cho AI"""
-    if not PROMPT_FILE.exists():
-        return "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp. Hãy luận giải lá số dựa trên quy tắc được cung cấp.", f"Chưa có file {PROMPT_FILE.name}, đang dùng prompt mặc định."
+    """Tự động tìm và nạp file .txt trong thư mục system_prompts"""
+    if not PROMPT_DIR.exists():
+        return "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp.", f"Không tìm thấy thư mục {PROMPT_DIR.name}"
+    
+    txt_files = list(PROMPT_DIR.glob("*.txt"))
+    if not txt_files:
+        return "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp.", "Thư mục system_prompts trống."
+    
+    target_file = txt_files[0]
     try:
-        with open(PROMPT_FILE, "r", encoding="utf-8") as f:
+        with open(target_file, "r", encoding="utf-8") as f:
             content = f.read().strip()
         return content, None
     except Exception as e:
-        return "", f"Lỗi đọc file {PROMPT_FILE.name}: {str(e)}"
+        return "", f"Lỗi đọc file {target_file.name}: {str(e)}"
 
 # --- 5. HÀM NẠP BỘ QUY TẮC CHÍNH (tu_vi_engine.json) ---
 @st.cache_data(ttl=3600)
 def load_engine_rules():
-    """Nạp file tu_vi_engine.json làm bộ quy tắc cốt lõi"""
     if not ENGINE_FILE.exists():
-        return None, f"Không tìm thấy file quy tắc bắt buộc: {ENGINE_FILE.name}"
+        return None, f"Không tìm thấy file quy tắc: {ENGINE_FILE.name}"
     try:
         with open(ENGINE_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data, None
+            return json.load(f), None
     except Exception as e:
         return None, f"Lỗi cấu trúc file {ENGINE_FILE.name}: {str(e)}"
 
 # --- 6. HÀM NẠP KHO SÁCH THAM KHẢO (books_cache.json) ---
 @st.cache_data(ttl=3600)
 def load_books_reference():
-    """Nạp file books_cache.json dùng làm tài liệu tham khảo câu phú/ví dụ"""
     if not BOOKS_FILE.exists():
         return None, f"Không tìm thấy file tham khảo: {BOOKS_FILE.name}"
     try:
@@ -197,7 +193,7 @@ with st.sidebar:
         st.caption("❌ Gemini API: **Chưa cấu hình KEY**")
 
     if not prompt_err:
-        st.caption("📜 System Prompt: **`system_prompt.txt` (Đã nạp)**")
+        st.caption("📜 System Prompt: **`system_prompts/` (Đã nạp)**")
     else:
         st.caption(f"⚠️ System Prompt: **{prompt_err}**")
 
@@ -214,7 +210,7 @@ with st.sidebar:
 # --- 11. PHÂN CHIA TABS ---
 tab_main, tab_sys_prompt, tab_rules, tab_books, tab_contact = st.tabs([
     "🔮 Luận Giải Lá Số",
-    "⚙️ System Prompt (system_prompt.txt)",
+    "⚙️ System Prompt (Thư mục)",
     "📜 Bộ Quy Tắc (tu_vi_engine.json)",
     "📚 Kho Tham Khảo Phú / Ví Dụ",
     "🔗 Liên Hệ & Hỗ Trợ"
@@ -273,7 +269,7 @@ with tab_main:
             elif not engine_data:
                 st.error("❌ Ứng dụng không thể chạy do thiếu file quy tắc `tu_vi_engine.json`!")
             else:
-                with st.spinner("⚡ AI đang nạp system_prompt.txt & tu_vi_engine.json để thực thi..."):
+                with st.spinner("⚡ AI đang nạp system prompt & tu_vi_engine.json để thực thi..."):
                     try:
                         client = genai.Client(api_key=API_KEY)
 
@@ -355,70 +351,4 @@ with tab_main:
                                 "Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n"
                                 f"--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\n"
                                 "BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n"
-                                f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ''}\n```\n\n"
-                                "Hãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
-                            )
-
-                            conversation = []
-                            for m in st.session_state.chat_messages:
-                                conversation.append(f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}")
-                            
-                            chat_prompt = "\n".join(conversation)
-
-                            chat_response = client.models.generate_content(
-                                model="gemini-2.5-flash",
-                                contents=chat_prompt,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=chat_system_instruction,
-                                    temperature=0.3
-                                )
-                            )
-
-                            if chat_response and chat_response.text:
-                                reply = chat_response.text
-                                st.markdown(reply)
-                                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
-                            else:
-                                st.error("Không nhận được phản hồi từ AI.")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
-
-# ==========================================
-# TAB 2: CẤU HÌNH SYSTEM PROMPT
-# ==========================================
-with tab_sys_prompt:
-    st.subheader("⚙️ System Prompt Bắt Buộc Áp Dụng (`system_prompt.txt`)")
-    st.text_area("Nội dung được nạp từ file `system_prompt.txt`:", value=main_system_prompt, height=450, disabled=True)
-
-# ==========================================
-# TAB 3: QUY TẮC CHÍNH
-# ==========================================
-with tab_rules:
-    st.subheader("📜 Bộ Quy Tắc Cốt Lõi (`tu_vi_engine.json`)")
-    if engine_data:
-        st.json(engine_data)
-    else:
-        st.error(engine_err)
-
-# ==========================================
-# TAB 4: KHO SÁCH THAM KHẢO
-# ==========================================
-with tab_books:
-    st.subheader("📚 Kho Tham Khảo Phú / Ví Dụ (`books_cache.json`)")
-    if books_text:
-        st.text_area("Dữ liệu sách tham khảo:", value=books_text, height=600)
-    else:
-        st.warning(books_err)
-
-# ==========================================
-# TAB 5: LIÊN HỆ
-# ==========================================
-with tab_contact:
-    st.subheader("🔗 Liên Hệ & Hỗ Trợ Engine")
-    st.markdown(
-        """
-        - **Ứng dụng:** Hệ Thống Luận Giải Tử Vi Đẩu Số Tự Động.
-        - **Mô hình AI:** Google Gemini 2.5 Flash (`google-genai` SDK).
-        - **Lưu trữ:** GitHub Repository cho ảnh lá số.
-        """
-    )
+                                f"```json\n{json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ''}\n
