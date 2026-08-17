@@ -292,7 +292,8 @@ with tab_main:
                     try:
                         client = genai.Client(api_key=API_KEY)
 
-                        # Xử lý chuỗi JSON ra biến riêng để tránh lỗi SyntaxError f-string
+                        # Sử dụng f-string ba dấu ngoặc kép để tránh lỗi SyntaxError đối với ký tự \n
                         if engine_data:
                             engine_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:250000]
-                            engine_context = f"```json\n{engine_str}\n
+                            engine_context = f"""```json
+{engine_str}
