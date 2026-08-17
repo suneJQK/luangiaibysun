@@ -55,7 +55,6 @@ st.markdown(
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(246, 211, 101, 0.4);
     }
-    /* Khung riêng biệt cho phần kết quả luận giải */
     .analysis-container-box {
         background-color: #161b22;
         border: 2px solid #d4af37;
