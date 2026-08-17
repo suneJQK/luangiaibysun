@@ -198,14 +198,11 @@ with st.sidebar:
     if books_text:
         st.caption("📚 Kho tham khảo: **Đã nạp ngầm**")
 
-# Khởi tạo biến bấm nút mặc định
 btn_main_analyze = False
 
-# Giao diện chia 2 cột
 col_input, col_output = st.columns([1, 1], gap="large")
 
 with col_input:
-    # Cấu hình Tải ảnh gọn gàng trong Expander
     with st.expander("📸 TẢI LÊN & CẤU HÌNH LÁ SỐ", expanded=False):
         uploaded_file = st.file_uploader("Tải lên ảnh lá số:", type=["jpg", "jpeg", "png", "webp"])
         
@@ -244,7 +241,6 @@ with col_input:
 
         btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", use_container_width=True)
 
-    # Khung Chat AI dạng Container cố định chiều cao
     chat_container = st.container(height=700, border=True)
     with chat_container:
         st.markdown('<div class="analysis-header-title">💬 Trò Chuyện & Hỏi Đáp Với AI</div>', unsafe_allow_html=True)
@@ -272,54 +268,13 @@ with col_input:
                             analysis_context = st.session_state.get("analysis_result", "Chưa có bài luận giải chi tiết.")
                             engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
 
-                            chat_system_instruction = (
-                                f"{main_system_prompt}\n\n"
-                                f"Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n"
-                                f"--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\n"
-                                f"BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n{engine_json_chat_str}\n```\n\n"
-                                f"Hãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
-                            )
+                            chat_system_instruction = f"""{main_system_prompt}
 
-                            conversation = [f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}" for m in st.session_state.chat_messages]
-                            chat_prompt = "\n".join(conversation)
+Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:
+--- START ANALYSIS ---
+{analysis_context}
+--- END ANALYSIS ---
 
-                            chat_response = client.models.generate_content(
-                                model="gemini-3.6-flash",
-                                contents=chat_prompt,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=chat_system_instruction,
-                                    temperature=0.3
-                                )
-                            )
-
-                            if chat_response and chat_response.text:
-                                reply = chat_response.text
-                                st.markdown(reply)
-                                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
-                                st.rerun()
-                            else:
-                                st.error("Không nhận được phản hồi từ AI.")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
-
-with col_output:
-    if "analysis_result" not in st.session_state:
-        st.session_state.analysis_result = None
-
-    if btn_main_analyze:
-        if "current_image" not in st.session_state:
-            st.warning("⚠️ Vui lòng mở phần cấu hình và tải lên ảnh lá số trước!")
-        elif not API_KEY:
-            st.error("❌ Chưa cấu hình GEMINI_API_KEY trong Secrets!")
-        elif not engine_data:
-            st.error("❌ Ứng dụng không thể chạy do thiếu file quy tắc `tu_vi_engine.json`!")
-        else:
-            with st.spinner("⚡ AI đang nạp system prompt & tu_vi_engine.json để thực thi..."):
-                try:
-                    client = get_gemini_client(API_KEY)
-                    engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
-                    
-                    combined_system_instruction = (
-                        f"{main_system_prompt}\n\n"
-                        f"=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n"
-                        f"```json\n{engine_json_str}\n
+BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):
+```json
+{engine_json_chat_str}
