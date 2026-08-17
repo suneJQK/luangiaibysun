@@ -152,10 +152,6 @@ def get_gemini_client(api_key: str):
 
 @st.cache_data(ttl=3600)
 def load_system_prompt():
-    """
-    Đọc TẤT CẢ .txt trong system_prompts theo thứ tự tên file.
-    Bản cũ chỉ đọc txt_files[0], khiến các chương còn lại bị bỏ qua.
-    """
     if not PROMPT_DIR.exists():
         return (
             "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp.",
@@ -259,10 +255,6 @@ def compact_text(text, max_chars=120000):
 # ============================================================
 
 def upload_to_github(uploaded_file):
-    """
-    Lưu ảnh lên GitHub nếu người dùng chủ động bật tính năng.
-    Dùng UUID để tránh trùng tên khi upload nhiều lần trong cùng một giây.
-    """
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "Thiếu GITHUB_TOKEN hoặc GITHUB_REPO trong Secrets."
 
@@ -318,10 +310,6 @@ def crop_12_cung_overlap(
     side_cut=0,
     overlap_px=15,
 ):
-    """
-    Cắt bố cục 4x4, trong đó 12 ô ngoài là 12 địa chi.
-    Giữ vùng overlap để tránh mất chữ nằm trên đường biên.
-    """
     if img is None:
         return {}
 
@@ -517,6 +505,7 @@ Hãy ưu tiên tính nhất quán và kiểm tra chéo hơn là viết dài.
 
 def generate_analysis(
     image: Image.Image,
+    cropped_dict: dict,
     system_prompt,
     engine_data,
     books_text,
@@ -533,22 +522,34 @@ def generate_analysis(
         user_note=user_note,
     )
 
-    image_bytes = image_to_bytes(image, "PNG")
+    contents = [types.Part.from_text(text=prompt)]
 
-    contents = [
-        types.Part.from_text(text=prompt),
-        types.Part.from_bytes(
-            data=image_bytes,
-            mime_type="image/png",
-        ),
-    ]
+    # 1. Nạp ảnh tổng thể
+    image_bytes = image_to_bytes(image, "PNG")
+    contents.append(
+        types.Part.from_bytes(data=image_bytes, mime_type="image/png")
+    )
+
+    # 2. Nạp thêm mảng ảnh cắt 12 cung để tăng độ chính xác nhận diện chữ
+    if cropped_dict:
+        contents.append(
+            types.Part.from_text(text="\n\nCHI TIẾT MẢNH CẮT 12 CUNG:\n")
+        )
+        for name, crop_img in cropped_dict.items():
+            contents.append(
+                types.Part.from_text(text=f"Mảnh cắt Cung {name}:")
+            )
+            crop_bytes = image_to_bytes(crop_img, "PNG")
+            contents.append(
+                types.Part.from_bytes(data=crop_bytes, mime_type="image/png")
+            )
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=contents,
         config=types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=30000,
+            max_output_tokens=8192,
         ),
     )
 
@@ -603,7 +604,12 @@ QUY TẮC TRẢ LỜI:
 """
 
 
-def ask_chat(question, selected_year):
+def ask_chat(
+    question,
+    selected_year,
+    main_system_prompt,
+    engine_data,
+):
     client = get_gemini_client(API_KEY)
 
     analysis_context = st.session_state.get(
@@ -620,7 +626,6 @@ def ask_chat(question, selected_year):
 
     history_parts = []
 
-    # Giới hạn lịch sử để tránh prompt phình quá lớn.
     for message in st.session_state.chat_messages[-12:]:
         role = message.get("role", "user")
         content = message.get("content", "")
@@ -643,7 +648,7 @@ CÂU HỎI MỚI:
         contents=full_prompt,
         config=types.GenerateContentConfig(
             temperature=0.25,
-            max_output_tokens=12000,
+            max_output_tokens=8192,
         ),
     )
 
@@ -722,6 +727,7 @@ with st.sidebar:
         st.session_state.chat_messages = []
         st.session_state.current_image_bytes = None
         st.session_state.current_image_name = ""
+        st.session_state.cropped_dict = {}
         st.rerun()
 
 
@@ -771,8 +777,6 @@ with col_input:
         overlap_val = 15
 
         if uploaded_file:
-            # Lưu bytes vào session để nút phân tích không phụ thuộc
-            # object UploadedFile sau các lần rerun.
             raw_bytes = uploaded_file.getvalue()
 
             if (
@@ -799,8 +803,6 @@ with col_input:
             if image_error:
                 st.error(image_error)
             else:
-                st.session_state.current_image = image
-
                 with st.expander(
                     "🛠️ Căn chỉnh lề & Vùng phủ đường biên",
                     expanded=False,
@@ -889,22 +891,18 @@ if analyze_clicked:
     elif engine_err:
         st.error(f"❌ Engine lỗi: {engine_err}")
     else:
-        image = st.session_state.get("current_image")
+        image, image_error = uploaded_file_to_image(uploaded_file)
 
-        if image is None:
-            image, image_error = uploaded_file_to_image(uploaded_file)
-
-            if image_error:
-                st.error(image_error)
-                image = None
-
-        if image is not None:
+        if image_error:
+            st.error(image_error)
+        else:
             with st.spinner(
                 "🔮 Gemini đang đọc lá số và thực hiện luận giải..."
             ):
                 try:
                     result = generate_analysis(
                         image=image,
+                        cropped_dict=st.session_state.get("cropped_dict", {}),
                         system_prompt=main_system_prompt,
                         engine_data=engine_data,
                         books_text=books_text,
@@ -913,8 +911,6 @@ if analyze_clicked:
                     )
 
                     st.session_state.analysis_result = result
-
-                    # Reset chat khi tạo một bài luận giải mới.
                     st.session_state.chat_messages = []
 
                     st.success("✅ Đã hoàn thành bài luận giải.")
@@ -1002,6 +998,8 @@ if user_question:
                     answer = ask_chat(
                         question=user_question,
                         selected_year=selected_year,
+                        main_system_prompt=main_system_prompt,
+                        engine_data=engine_data,
                     )
 
                     st.markdown(answer)
