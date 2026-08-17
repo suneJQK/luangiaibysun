@@ -277,9 +277,117 @@ with tab_main:
 
                         engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
                         
-                        combined_system_instruction = (
-                            f"{main_system_prompt}\n\n"
-                            "=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n"
-                            "```json\n"
-                            f"{engine_json_str}\n"
-                            "
+                        combined_system_instruction = f"{main_system_prompt}\n\n=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n```json\n{engine_json_str}\n```"
+
+                        ref_books_context = ""
+                        if books_text:
+                            ref_books_context = f"\n\nKHO SÁCH & PHÚ THAM KHẢO BỔ SUNG (BOOKS REFERENCE):\n{books_text[:100000]}"
+
+                        user_prompt = f"Hãy đọc lá số Tử Vi từ các hình ảnh được cung cấp.\n- Năm luận Tiểu Hạn: {selected_year}\n- Yêu cầu thêm từ người dùng: {user_note}\n\n{ref_books_context}\n\nHãy tiến hành nhận diện 12 cung, lập ma trận sao và xuất báo cáo luận giải chi tiết theo đúng định dạng được quy định."
+
+                        content_payload = [image]
+                        for cung_name, crop_img in cropped_dict.items():
+                            content_payload.append(f"Mảnh cắt Cung {cung_name}:")
+                            content_payload.append(crop_img)
+                        content_payload.append(user_prompt)
+
+                        response = client.models.generate_content(
+                            model="gemini-2.5-flash",
+                            contents=content_payload,
+                            config=types.GenerateContentConfig(
+                                system_instruction=combined_system_instruction,
+                                temperature=0.15
+                            )
+                        )
+
+                        if response and response.text:
+                            st.session_state.analysis_result = response.text
+                            st.session_state.chat_messages = []
+                            st.success("✅ Đã hoàn tất luận giải!")
+
+                    except Exception as e:
+                        st.error(f"❌ Lỗi xử lý AI Engine: {e}")
+
+        with st.container(border=True):
+            st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động</div>', unsafe_allow_html=True)
+            
+            if st.session_state.analysis_result:
+                st.markdown(f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>', unsafe_allow_html=True)
+            else:
+                st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý.")
+
+        st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
+        st.caption("Bạn có thể đặt câu hỏi chi tiết về lá số, các cung, đại hạn/tiểu hạn hoặc nhờ giải thích thêm.")
+
+        for msg in st.session_state.chat_messages:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        user_question = st.chat_input("Nhập câu hỏi của bạn cho AI (Ví dụ: Hạn năm nay cần lưu ý điều gì nhất?)...")
+        if user_question:
+            if not API_KEY:
+                st.error("❌ Chưa cấu hình GEMINI_API_KEY!")
+            else:
+                st.session_state.chat_messages.append({"role": "user", "content": user_question})
+                with st.chat_message("user"):
+                    st.markdown(user_question)
+
+                with st.chat_message("assistant"):
+                    with st.spinner("🔮 AI đang suy luận câu trả lời..."):
+                        try:
+                            client = genai.Client(api_key=API_KEY)
+                            
+                            analysis_context = st.session_state.analysis_result or "Chưa có bài luận giải chi tiết."
+                            engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
+
+                            chat_system_instruction = f"{main_system_prompt}\n\nDưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\nBỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n{engine_json_chat_str}\n```\n\nHãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
+
+                            conversation = []
+                            for m in st.session_state.chat_messages:
+                                conversation.append(f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}")
+                            
+                            chat_prompt = "\n".join(conversation)
+
+                            chat_response = client.models.generate_content(
+                                model="gemini-2.5-flash",
+                                contents=chat_prompt,
+                                config=types.GenerateContentConfig(
+                                    system_instruction=chat_system_instruction,
+                                    temperature=0.3
+                                )
+                            )
+
+                            if chat_response and chat_response.text:
+                                reply = chat_response.text
+                                st.markdown(reply)
+                                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+                            else:
+                                st.error("Không nhận được phản hồi từ AI.")
+                        except Exception as e:
+                            st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
+
+with tab_sys_prompt:
+    st.subheader("⚙️ System Prompt Tự Động Nạp Từ Thư Mục `system_prompts/`")
+    st.text_area("Nội dung file cấu hình:", value=main_system_prompt, height=450, disabled=True)
+
+with tab_rules:
+    st.subheader("📜 Bộ Quy Tắc Cốt Lõi (`tu_vi_engine.json`)")
+    if engine_data:
+        st.json(engine_data)
+    else:
+        st.error(engine_err)
+
+with tab_books:
+    st.subheader("📚 Kho Tham Khảo Phú / Ví Dụ (`books_cache.json`)")
+    if books_text:
+        st.text_area("Dữ liệu sách tham khảo:", value=books_text, height=600)
+    else:
+        st.warning(books_err)
+
+with tab_contact:
+    st.subheader("🔗 Liên Hệ & Hỗ Trợ Engine")
+    st.markdown(
+        "- **Ứng dụng:** Hệ Thống Luận Giải Tử Vi Đẩu Số Tự Động.\n"
+        "- **Mô hình AI:** Google Gemini (`google-genai` SDK).\n"
+        "- **Lưu trữ:** GitHub Repository cho ảnh lá số."
+    )
