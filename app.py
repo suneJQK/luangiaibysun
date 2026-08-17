@@ -64,10 +64,15 @@ st.markdown(
         border-bottom: 1px solid #30363d;
         padding-bottom: 10px;
     }
-    .scrollable-result-content {
-        max-height: 650px;
+    .scrollable-result-container {
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #161b22;
+        max-height: 800px;
         overflow-y: auto;
-        padding-right: 10px;
+    }
+    .scrollable-result-content {
         color: #e6edf3;
         font-size: 1rem;
         line-height: 1.6;
@@ -183,211 +188,162 @@ books_text, books_err = load_books_reference()
 
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/yin-yang.png", width=64)
-    st.title("⚙️ Cấu Hình Luận Giải")
-    selected_year = st.number_input("📅 Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1)
-    user_note = st.text_area(
-        "📝 Ghi chú / Yêu cầu thêm:",
-        value="Yêu cầu AI áp dụng nghiêm ngặt quy tắc trong tu_vi_engine.json và dẫn chứng thêm câu phú từ kho sách.",
-        height=100,
-    )
-    btn_sidebar_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", key="btn_sidebar", use_container_width=True)
-    
-    st.markdown("---")
-    st.subheader("🔌 Trạng Thái Dữ Liệu")
-    
+    st.title("⚙️ Thông Tin Hệ Thống")
     if API_KEY:
         st.caption("✅ Gemini API: **Đã kết nối**")
     else:
         st.caption("❌ Gemini API: **Chưa cấu hình KEY**")
 
     if not prompt_err:
-        st.caption("📜 System Prompt: **`system_prompts/` (Đã nạp)**")
-    else:
-        st.caption(f"⚠️ System Prompt: **{prompt_err}**")
-
+        st.caption("📜 System Prompt: **Đã nạp ngầm**")
     if engine_data:
-        st.caption("📜 Quy tắc chính: **`tu_vi_engine.json` (Đã nạp)**")
-    else:
-        st.caption(f"❌ Quy tắc chính: **{engine_err}**")
-
+        st.caption("📜 Quy tắc chính: **Đã nạp ngầm**")
     if books_text:
-        st.caption("📚 Kho tham khảo: **`books_cache.json` (Đã nạp)**")
-    else:
-        st.caption("⚠️ Kho tham khảo: **Không có (Tùy chọn)**")
+        st.caption("📚 Kho tham khảo: **Đã nạp ngầm**")
 
-tab_main, tab_sys_prompt, tab_rules, tab_books, tab_contact = st.tabs([
-    "🔮 Luận Giải Lá Số",
-    "⚙️ System Prompt (Thư mục)",
-    "📜 Bộ Quy Tắc (tu_vi_engine.json)",
-    "📚 Kho Tham Khảo Phú / Ví Dụ",
-    "🔗 Liên Hệ & Hỗ Trợ"
-])
+# Giao diện chính chia làm 2 cột
+col_input, col_output = st.columns([1, 1.3], gap="large")
 
-with tab_main:
-    col_input, col_output = st.columns([1, 1.3], gap="large")
+with col_input:
+    st.subheader("📸 Tải Lên & Cấu Hình Lá Số")
+    uploaded_file = st.file_uploader("Tải lên ảnh lá số:", type=["jpg", "jpeg", "png", "webp"])
+    cropped_dict = {}
 
-    with col_input:
-        st.subheader("📸 Upload & Căn Chỉnh Lá Số")
-        uploaded_file = st.file_uploader("Tải lên ảnh lá số:", type=["jpg", "jpeg", "png", "webp"])
-        cropped_dict = {}
+    selected_year = st.number_input("📅 Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1)
+    user_note = st.text_area(
+        "📝 Ghi chú / Yêu cầu thêm:",
+        value="Yêu cầu AI áp dụng nghiêm ngặt quy tắc trong tu_vi_engine.json và dẫn chứng thêm câu phú từ kho sách.",
+        height=80,
+    )
 
-        if uploaded_file:
-            if st.session_state.get("last_uploaded") != uploaded_file.name:
-                with st.spinner("🐙 Đang lưu bản sao lá số..."):
-                    gh_success, gh_msg = upload_to_github(uploaded_file)
-                    if gh_success:
-                        st.toast("✅ Đã lưu lá số an toàn!", icon="✅")
-                    st.session_state.last_uploaded = uploaded_file.name
+    if uploaded_file:
+        if st.session_state.get("last_uploaded") != uploaded_file.name:
+            with st.spinner("🐙 Đang lưu bản sao lá số..."):
+                gh_success, gh_msg = upload_to_github(uploaded_file)
+                if gh_success:
+                    st.toast("✅ Đã lưu lá số an toàn!", icon="✅")
+                st.session_state.last_uploaded = uploaded_file.name
 
-            image = Image.open(uploaded_file).convert("RGB")
+        image = Image.open(uploaded_file).convert("RGB")
 
-            with st.expander("🛠️ Căn chỉnh lề & Vạch ngăn Tuần/Triệt", expanded=False):
-                top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
-                bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
-                side_val = st.slider("↔️ Bỏ lề TRÁI/PHẢI (%):", 0, 15, 0, 1)
-                overlap_val = st.slider("🔍 Vùng phủ vạch ngăn (Px):", 5, 40, 15, 1)
+        with st.expander("🛠️ Căn chỉnh lề & Vạch ngăn Tuần/Triệt", expanded=False):
+            top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
+            bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
+            side_val = st.slider("↔️ Bỏ lề TRÁI/PHẢI (%):", 0, 15, 0, 1)
+            overlap_val = st.slider("🔍 Vùng phủ vạch ngăn (Px):", 5, 40, 15, 1)
 
-            st.image(image, caption="Lá số đã tải lên", use_container_width=True)
-            cropped_dict = crop_12_cung_overlap(image, top_val, bottom_val, side_val, overlap_val)
+        st.image(image, caption="Lá số đã tải lên", use_container_width=True)
+        cropped_dict = crop_12_cung_overlap(image, top_val, bottom_val, side_val, overlap_val)
 
-            with st.expander("🔍 Xem mảnh cắt 12 Cung"):
-                cols = st.columns(3)
-                for idx, (name, crop_img) in enumerate(cropped_dict.items()):
-                    cols[idx % 3].image(crop_img, caption=f"Cung {name}", use_container_width=True)
+        with st.expander("🔍 Xem mảnh cắt 12 Cung"):
+            cols = st.columns(3)
+            for idx, (name, crop_img) in enumerate(cropped_dict.items()):
+                cols[idx % 3].image(crop_img, caption=f"Cung {name}", use_container_width=True)
 
-        btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", key="btn_main", use_container_width=True)
+    btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="init" if "analysis_result" in st.session_state else "primary", use_container_width=True)
 
-    with col_output:
-        if "analysis_result" not in st.session_state:
-            st.session_state.analysis_result = None
-        if "chat_messages" not in st.session_state:
-            st.session_state.chat_messages = []
+    st.markdown("---")
+    st.subheader("💬 Trò chuyện & Hỏi đáp với AI")
+    
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = []
 
-        if btn_sidebar_analyze or btn_main_analyze:
-            if not uploaded_file:
-                st.warning("⚠️ Vui lòng tải lên ảnh lá số trước!")
-            elif not API_KEY:
-                st.error("❌ Chưa cấu hình GEMINI_API_KEY trong Secrets!")
-            elif not engine_data:
-                st.error("❌ Ứng dụng không thể chạy do thiếu file quy tắc `tu_vi_engine.json`!")
-            else:
-                with st.spinner("⚡ AI đang nạp system prompt & tu_vi_engine.json để thực thi..."):
+    for msg in st.session_state.chat_messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    user_question = st.chat_input("Nhập câu hỏi về lá số (Ví dụ: Hạn năm nay cần lưu ý gì?)...")
+    if user_question:
+        if not API_KEY:
+            st.error("❌ Chưa cấu hình GEMINI_API_KEY!")
+        else:
+            st.session_state.chat_messages.append({"role": "user", "content": user_question})
+            with st.chat_message("user"):
+                st.markdown(user_question)
+
+            with st.chat_message("assistant"):
+                with st.spinner("🔮 AI đang suy luận câu trả lời..."):
                     try:
                         client = genai.Client(api_key=API_KEY)
+                        analysis_context = st.session_state.get("analysis_result", "Chưa có bài luận giải chi tiết.")
+                        engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
 
-                        engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
-                        
-                        combined_system_instruction = f"{main_system_prompt}\n\n=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n```json\n{engine_json_str}\n```"
+                        chat_system_instruction = f"{main_system_prompt}\n\nDưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\nBỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n{engine_json_chat_str}\n```\n\nHãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
 
-                        ref_books_context = ""
-                        if books_text:
-                            ref_books_context = f"\n\nKHO SÁCH & PHÚ THAM KHẢO BỔ SUNG (BOOKS REFERENCE):\n{books_text[:100000]}"
+                        conversation = [f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}" for m in st.session_state.chat_messages]
+                        chat_prompt = "\n".join(conversation)
 
-                        user_prompt = f"Hãy đọc lá số Tử Vi từ các hình ảnh được cung cấp.\n- Năm luận Tiểu Hạn: {selected_year}\n- Yêu cầu thêm từ người dùng: {user_note}\n\n{ref_books_context}\n\nHãy tiến hành nhận diện 12 cung, lập ma trận sao và xuất báo cáo luận giải chi tiết theo đúng định dạng được quy định."
-
-                        content_payload = [image]
-                        for cung_name, crop_img in cropped_dict.items():
-                            content_payload.append(f"Mảnh cắt Cung {cung_name}:")
-                            content_payload.append(crop_img)
-                        content_payload.append(user_prompt)
-
-                        response = client.models.generate_content(
+                        chat_response = client.models.generate_content(
                             model="gemini-2.5-flash",
-                            contents=content_payload,
+                            contents=chat_prompt,
                             config=types.GenerateContentConfig(
-                                system_instruction=combined_system_instruction,
-                                temperature=0.15
+                                system_instruction=chat_system_instruction,
+                                temperature=0.3
                             )
                         )
 
-                        if response and response.text:
-                            st.session_state.analysis_result = response.text
-                            st.session_state.chat_messages = []
-                            st.success("✅ Đã hoàn tất luận giải!")
-
+                        if chat_response and chat_response.text:
+                            reply = chat_response.text
+                            st.markdown(reply)
+                            st.session_state.chat_messages.append({"role": "assistant", "content": reply})
+                        else:
+                            st.error("Không nhận được phản hồi từ AI.")
                     except Exception as e:
-                        st.error(f"❌ Lỗi xử lý AI Engine: {e}")
+                        st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
 
-        with st.container(border=True):
-            st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động</div>', unsafe_allow_html=True)
-            
-            if st.session_state.analysis_result:
-                st.markdown(f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>', unsafe_allow_html=True)
-            else:
-                st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý.")
+with col_output:
+    if "analysis_result" not in st.session_state:
+        st.session_state.analysis_result = None
 
-        st.subheader("💬 Hỏi Đáp Nâng Cao Với AI Luận Giải")
-        st.caption("Bạn có thể đặt câu hỏi chi tiết về lá số, các cung, đại hạn/tiểu hạn hoặc nhờ giải thích thêm.")
+    if btn_main_analyze:
+        if not uploaded_file:
+            st.warning("⚠️ Vui lòng tải lên ảnh lá số trước!")
+        elif not API_KEY:
+            st.error("❌ Chưa cấu hình GEMINI_API_KEY trong Secrets!")
+        elif not engine_data:
+            st.error("❌ Ứng dụng không thể chạy do thiếu file quy tắc `tu_vi_engine.json`!")
+        else:
+            with st.spinner("⚡ AI đang nạp system prompt & tu_vi_engine.json để thực thi..."):
+                try:
+                    client = genai.Client(api_key=API_KEY)
+                    engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
+                    
+                    combined_system_instruction = f"{main_system_prompt}\n\n=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n```json\n{engine_json_str}\n```"
 
-        for msg in st.session_state.chat_messages:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+                    ref_books_context = ""
+                    if books_text:
+                        ref_books_context = f"\n\nKHO SÁCH & PHÚ THAM KHẢO BỔ SUNG (BOOKS REFERENCE):\n{books_text[:100000]}"
 
-        user_question = st.chat_input("Nhập câu hỏi của bạn cho AI (Ví dụ: Hạn năm nay cần lưu ý điều gì nhất?)...")
-        if user_question:
-            if not API_KEY:
-                st.error("❌ Chưa cấu hình GEMINI_API_KEY!")
-            else:
-                st.session_state.chat_messages.append({"role": "user", "content": user_question})
-                with st.chat_message("user"):
-                    st.markdown(user_question)
+                    user_prompt = f"Hãy đọc lá số Tử Vi từ các hình ảnh được cung cấp.\n- Năm luận Tiểu Hạn: {selected_year}\n- Yêu cầu thêm từ người dùng: {user_note}\n\n{ref_books_context}\n\nHãy tiến hành nhận diện 12 cung, lập ma trận sao và xuất báo cáo luận giải chi tiết theo đúng định dạng được quy định."
 
-                with st.chat_message("assistant"):
-                    with st.spinner("🔮 AI đang suy luận câu trả lời..."):
-                        try:
-                            client = genai.Client(api_key=API_KEY)
-                            
-                            analysis_context = st.session_state.analysis_result or "Chưa có bài luận giải chi tiết."
-                            engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
+                    content_payload = [image]
+                    for cung_name, crop_img in cropped_dict.items():
+                        content_payload.append(f"Mảnh cắt Cung {cung_name}:")
+                        content_payload.append(crop_img)
+                    content_payload.append(user_prompt)
 
-                            chat_system_instruction = f"{main_system_prompt}\n\nDưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\nBỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n{engine_json_chat_str}\n```\n\nHãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=content_payload,
+                        config=types.GenerateContentConfig(
+                            system_instruction=combined_system_instruction,
+                            temperature=0.15
+                        )
+                    )
 
-                            conversation = []
-                            for m in st.session_state.chat_messages:
-                                conversation.append(f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}")
-                            
-                            chat_prompt = "\n".join(conversation)
+                    if response and response.text:
+                        st.session_state.analysis_result = response.text
+                        st.session_state.chat_messages = []
+                        st.success("✅ Đã hoàn tất luận giải!")
+                except Exception as e:
+                    st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
-                            chat_response = client.models.generate_content(
-                                model="gemini-2.5-flash",
-                                contents=chat_prompt,
-                                config=types.GenerateContentConfig(
-                                    system_instruction=chat_system_instruction,
-                                    temperature=0.3
-                                )
-                            )
-
-                            if chat_response and chat_response.text:
-                                reply = chat_response.text
-                                st.markdown(reply)
-                                st.session_state.chat_messages.append({"role": "assistant", "content": reply})
-                            else:
-                                st.error("Không nhận được phản hồi từ AI.")
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi gửi câu hỏi: {e}")
-
-with tab_sys_prompt:
-    st.subheader("⚙️ System Prompt Tự Động Nạp Từ Thư Mục `system_prompts/`")
-    st.text_area("Nội dung file cấu hình:", value=main_system_prompt, height=450, disabled=True)
-
-with tab_rules:
-    st.subheader("📜 Bộ Quy Tắc Cốt Lõi (`tu_vi_engine.json`)")
-    if engine_data:
-        st.json(engine_data)
+    st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động (Cố Định Khung)</div>', unsafe_allow_html=True)
+    
+    # Khung cố định kết quả luận giải
+    st.markdown('<div class="scrollable-result-container">', unsafe_allow_html=True)
+    if st.session_state.analysis_result:
+        st.markdown(f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>', unsafe_allow_html=True)
     else:
-        st.error(engine_err)
-
-with tab_books:
-    st.subheader("📚 Kho Tham Khảo Phú / Ví Dụ (`books_cache.json`)")
-    if books_text:
-        st.text_area("Dữ liệu sách tham khảo:", value=books_text, height=600)
-    else:
-        st.warning(books_err)
-
-with tab_contact:
-    st.subheader("🔗 Liên Hệ & Hỗ Trợ Engine")
-    st.markdown(
-        "- **Ứng dụng:** Hệ Thống Luận Giải Tử Vi Đẩu Số Tự Động.\n"
-        "- **Mô hình AI:** Google Gemini (`google-genai` SDK).\n"
-        "- **Lưu trữ:** GitHub Repository cho ảnh lá số."
-    )
+        st.info("👈 Hãy tải lên ảnh lá số và nhấn nút 'BẮT ĐẦU LUẬN GIẢI' ở cột bên trái để hiển thị kết quả tại đây.")
+    st.markdown('</div>', unsafe_allow_html=True)
