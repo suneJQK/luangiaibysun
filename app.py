@@ -55,6 +55,16 @@ st.markdown(
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(246, 211, 101, 0.4);
     }
+    /* CSS cho khung kết quả luận giải có thanh cuộn riêng biệt */
+    .scrollable-result-box {
+        max-height: 650px;
+        overflow-y: auto;
+        padding: 20px;
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -316,8 +326,12 @@ with tab_main:
                     except Exception as e:
                         st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
+        # KHUNG HIỂN THỊ KẾT QUẢ RIÊNG BIỆT CÓ THANH CUỘN (SCROLLABLE BOX)
         if st.session_state.analysis_result:
-            st.markdown(st.session_state.analysis_result)
+            st.markdown(
+                f'<div class="scrollable-result-box">{st.session_state.analysis_result}</div>',
+                unsafe_allow_html=True
+            )
         else:
             st.info("👈 Nhấn nút 'BẮT ĐẦU LUẬN GIẢI' để kích hoạt AI xử lý.")
 
