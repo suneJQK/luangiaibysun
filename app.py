@@ -198,15 +198,17 @@ with st.sidebar:
     if books_text:
         st.caption("📚 Kho tham khảo: **Đã nạp ngầm**")
 
-# Giao diện chia 2 cột cân bằng
+# Khởi tạo biến bấm nút mặc định
+btn_main_analyze = False
+
+# Giao diện chia 2 cột
 col_input, col_output = st.columns([1, 1], gap="large")
 
 with col_input:
-    # --- PHÍM TẮT THU PHÓNG (EXPANDER) DÀNH CHO PHẦN TẢI ẢNH & CẤU HÌNH ---
-    with st.expander("📸 TẢI LÊN & CẤU HÌNH LÁ SỐ (Nhấn để thu gọn/mở rộng)", expanded=False):
+    # Cấu hình Tải ảnh gọn gàng trong Expander
+    with st.expander("📸 TẢI LÊN & CẤU HÌNH LÁ SỐ", expanded=False):
         uploaded_file = st.file_uploader("Tải lên ảnh lá số:", type=["jpg", "jpeg", "png", "webp"])
-        cropped_dict = {}
-
+        
         selected_year = st.number_input("📅 Năm luận Tiểu Hạn:", 1950, 2050, 2026, 1)
         user_note = st.text_area(
             "📝 Ghi chú / Yêu cầu thêm:",
@@ -242,7 +244,7 @@ with col_input:
 
         btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", use_container_width=True)
 
-    # --- KHUNG CHAT TỰA NHƯ KHUNG LUẬN GIẢI (CỐ ĐỊNH CHIỀU CAO & CUỘN RIÊNG) ---
+    # Khung Chat AI dạng Container cố định chiều cao
     chat_container = st.container(height=700, border=True)
     with chat_container:
         st.markdown('<div class="analysis-header-title">💬 Trò Chuyện & Hỏi Đáp Với AI</div>', unsafe_allow_html=True)
@@ -270,7 +272,13 @@ with col_input:
                             analysis_context = st.session_state.get("analysis_result", "Chưa có bài luận giải chi tiết.")
                             engine_json_chat_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
 
-                            chat_system_instruction = f"{main_system_prompt}\n\nDưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\nBỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n{engine_json_chat_str}\n```\n\nHãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
+                            chat_system_instruction = (
+                                f"{main_system_prompt}\n\n"
+                                f"Dưới đây là BÀI LUẬN GIẢI GỐC của lá số này:\n"
+                                f"--- START ANALYSIS ---\n{analysis_context}\n--- END ANALYSIS ---\n\n"
+                                f"BỘ QUY TẮC CỐT LÕI (tu_vi_engine.json):\n```json\n{engine_json_chat_str}\n```\n\n"
+                                f"Hãy trả lời câu hỏi của người dùng một cách chính xác, bám sát bài luận giải gốc và quy tắc Tử Vi."
+                            )
 
                             conversation = [f"{'Người dùng' if m['role']=='user' else 'AI'}: {m['content']}" for m in st.session_state.chat_messages]
                             chat_prompt = "\n".join(conversation)
@@ -298,8 +306,7 @@ with col_output:
     if "analysis_result" not in st.session_state:
         st.session_state.analysis_result = None
 
-    # Logic chạy khi bấm nút Luận giải ở cột trái
-    if 'btn_main_analyze' in locals() and btn_main_analyze:
+    if btn_main_analyze:
         if "current_image" not in st.session_state:
             st.warning("⚠️ Vui lòng mở phần cấu hình và tải lên ảnh lá số trước!")
         elif not API_KEY:
@@ -312,4 +319,7 @@ with col_output:
                     client = get_gemini_client(API_KEY)
                     engine_json_str = json.dumps(engine_data, ensure_ascii=False, indent=2)[:100000] if engine_data else ""
                     
-                    combined_system_instruction = f"{main_system_prompt}\n\n=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n```json\n{engine_json_str}\n
+                    combined_system_instruction = (
+                        f"{main_system_prompt}\n\n"
+                        f"=== BỘ QUY TẮC BẮT BUỘC THỰC THI (tu_vi_engine.json) ===\n"
+                        f"```json\n{engine_json_str}\n
