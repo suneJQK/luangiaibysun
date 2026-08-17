@@ -240,7 +240,7 @@ with col_input:
             for idx, (name, crop_img) in enumerate(cropped_dict.items()):
                 cols[idx % 3].image(crop_img, caption=f"Cung {name}", use_container_width=True)
 
-    btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="init" if "analysis_result" in st.session_state else "primary", use_container_width=True)
+    btn_main_analyze = st.button("🔮 BẮT ĐẦU LUẬN GIẢI", type="primary", use_container_width=True)
 
     st.markdown("---")
     st.subheader("💬 Trò chuyện & Hỏi đáp với AI")
