@@ -75,7 +75,7 @@ GITHUB_REPO = st.secrets.get("GITHUB_REPO", os.environ.get("GITHUB_REPO", ""))
 BASE_DIR = Path(__file__).parent
 ENGINE_FILE = BASE_DIR / "tu_vi_engine.json"
 BOOKS_FILE = BASE_DIR / "books_cache.json"
-PROMPT_FILE = BASE_DIR / "system_prompt.txt"
+PROMPT_FILE = BASE_DIR / "system_prompts" / "system_instruction.txt"
 
 # --- 4. HÀM NẠP SYSTEM PROMPT TỪ FILE RIÊNG ---
 @st.cache_data(ttl=3600)
