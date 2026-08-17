@@ -16,7 +16,7 @@ from google.genai import types
 
 
 # ============================================================
-# CẤU HÌNH STREAMLIT
+# CẤU HÌNH STREAMLIT & CSS
 # ============================================================
 
 st.set_page_config(
@@ -83,10 +83,35 @@ st.markdown(
         padding-bottom: 10px;
     }
 
+    /* KHOẢNG CUỘN RIÊNG CHO PHẦN LUẬN GIẢI BÊN PHẢI */
     .scrollable-result-content {
         color: #e6edf3;
         font-size: 1rem;
         line-height: 1.6;
+        max-height: 75vh;             /* Chiều cao tối đa bằng 75% màn hình */
+        overflow-y: auto;             /* Tự động hiện thanh cuộn dọc */
+        padding-right: 15px;          /* Khoảng đệm cho thanh cuộn */
+        padding-left: 5px;
+        border: 1px solid #30363d;   /* Viền bao bọc vùng đọc */
+        border-radius: 10px;
+        background-color: #161b22;
+        margin-bottom: 15px;
+    }
+
+    /* Tùy chỉnh thanh cuộn cho đẹp mắt */
+    .scrollable-result-content::-webkit-scrollbar {
+        width: 8px;
+    }
+    .scrollable-result-content::-webkit-scrollbar-track {
+        background: #0d1117;
+        border-radius: 8px;
+    }
+    .scrollable-result-content::-webkit-scrollbar-thumb {
+        background: #30363d;
+        border-radius: 8px;
+    }
+    .scrollable-result-content::-webkit-scrollbar-thumb:hover {
+        background: #d4af37;
     }
     </style>
     """,
@@ -530,7 +555,7 @@ def generate_analysis(
         types.Part.from_bytes(data=image_bytes, mime_type="image/png")
     )
 
-    # 2. Nạp thêm mảng ảnh cắt 12 cung để tăng độ chính xác nhận diện chữ
+    # 2. Nạp thêm các mảnh cắt 12 cung
     if cropped_dict:
         contents.append(
             types.Part.from_text(text="\n\nCHI TIẾT MẢNH CẮT 12 CUNG:\n")
@@ -545,7 +570,7 @@ def generate_analysis(
             )
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",  # ĐÃ CẬP NHẬT MODEL GEMINI 3.6
         contents=contents,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -644,7 +669,7 @@ CÂU HỎI MỚI:
 """
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",  # ĐÃ CẬP NHẬT MODEL GEMINI 3.6
         contents=full_prompt,
         config=types.GenerateContentConfig(
             temperature=0.25,
@@ -897,7 +922,7 @@ if analyze_clicked:
             st.error(image_error)
         else:
             with st.spinner(
-                "🔮 Gemini đang đọc lá số và thực hiện luận giải..."
+                "🔮 Gemini 3.6 đang đọc lá số và thực hiện luận giải..."
             ):
                 try:
                     result = generate_analysis(
@@ -924,7 +949,7 @@ if analyze_clicked:
 
 
 # ============================================================
-# CỘT OUTPUT
+# CỘT OUTPUT (ĐÃ SỬA VÙNG KÉO TRƯỢT RIÊNG BIỆT)
 # ============================================================
 
 with col_output:
@@ -937,12 +962,10 @@ with col_output:
     analysis_result = st.session_state.get("analysis_result", "")
 
     if analysis_result:
-        st.markdown(
-            '<div class="scrollable-result-content">',
-            unsafe_allow_html=True,
-        )
+        # Đưa st.markdown vào bên trong thẻ div có class scrollable-result-content
+        st.markdown('<div class="scrollable-result-content">', unsafe_allow_html=True)
         st.markdown(analysis_result)
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.download_button(
             "⬇️ Tải bài luận giải (.txt)",
@@ -993,7 +1016,7 @@ if user_question:
             st.markdown(user_question)
 
         with st.chat_message("assistant"):
-            with st.spinner("🔮 AI đang suy luận câu trả lời..."):
+            with st.spinner("🔮 Gemini 3.6 đang suy luận câu trả lời..."):
                 try:
                     answer = ask_chat(
                         question=user_question,
