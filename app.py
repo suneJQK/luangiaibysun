@@ -65,14 +65,7 @@ st.markdown(
         border-bottom: 1px solid #30363d;
         padding-bottom: 10px;
     }
-    .scrollable-result-container {
-        border: 1px solid #30363d;
-        border-radius: 10px;
-        padding: 20px;
-        background-color: #161b22;
-        max-height: 800px;
-        overflow-y: auto;
-    }
+    /* Tùy chỉnh màu sắc nội dung luận giải */
     .scrollable-result-content {
         color: #e6edf3;
         font-size: 1rem;
@@ -206,7 +199,7 @@ with st.sidebar:
     if books_text:
         st.caption("📚 Kho tham khảo: **Đã nạp ngầm**")
 
-# Giao diện chính chia làm 2 cột độc lập
+# Giao diện chia 2 cột
 col_input, col_output = st.columns([1, 1.5], gap="large")
 
 with col_input:
@@ -327,7 +320,6 @@ with col_output:
                         content_payload.append(crop_img)
                     content_payload.append(user_prompt)
 
-                    # Cơ chế thử lại tối đa 3 lần nếu gặp lỗi quá tải 503
                     response = None
                     for attempt in range(3):
                         try:
@@ -342,7 +334,7 @@ with col_output:
                             break
                         except Exception as api_err:
                             if "503" in str(api_err) and attempt < 2:
-                                time.sleep(3) # Chờ 3 giây rồi thử lại
+                                time.sleep(3)
                                 continue
                             else:
                                 raise api_err
@@ -355,15 +347,15 @@ with col_output:
                 except Exception as e:
                     st.error(f"❌ Lỗi xử lý AI Engine: {e}")
 
-    st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động (Cố Định Khung)</div>', unsafe_allow_html=True)
-    
-    # Khung cố định kết quả luận giải tách biệt hoàn toàn
-    st.markdown('<div class="scrollable-result-container">', unsafe_allow_html=True)
-    if st.session_state.get("analysis_result"):
-        st.markdown(f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>', unsafe_allow_html=True)
-        if st.button("🧹 Xóa kết quả"):
-            st.session_state.analysis_result = None
-            st.rerun()
-    else:
-        st.info("👈 Hãy tải lên ảnh lá số và nhấn nút 'BẮT ĐẦU LUẬN GIẢI' ở cột bên trái để hiển thị kết quả tại đây.")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Bọc toàn bộ vùng bên phải vào st.container có độ cao cố định (750px) để tự động tạo thanh cuộn riêng biệt
+    right_container = st.container(height=750, border=True)
+    with right_container:
+        st.markdown('<div class="analysis-header-title">📜 Kết Quả Luận Giải Tự Động</div>', unsafe_allow_html=True)
+        if st.session_state.get("analysis_result"):
+            st.markdown(f'<div class="scrollable-result-content">{st.session_state.analysis_result}</div>', unsafe_allow_html=True)
+            st.markdown("---")
+            if st.button("🧹 Xóa kết quả"):
+                st.session_state.analysis_result = None
+                st.rerun()
+        else:
+            st.info("👈 Hãy tải lên ảnh lá số và nhấn nút 'BẮT ĐẦU LUẬN GIẢI' ở cột bên trái để hiển thị kết quả tại đây.")
