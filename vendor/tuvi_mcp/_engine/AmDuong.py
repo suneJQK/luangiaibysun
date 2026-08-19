@@ -432,7 +432,7 @@ def nguHanhNapAm(diaChi, thienCan, xuatBanMenh=False):
         "K5": "KIẾM PHONG KIM",
         "H6": "SƠN ÐẦU HỎA",
         "O6": "ỐC THƯỢNG THỔ",
-        "M6": "BÌNH ÐỊA MỘC",
+        "M6": "BÌNH ĐỊA MỘC",
         "K6": "XOA XUYẾN KIM",
         "T6": "ÐẠI HẢI THỦY"}
     matranNapAm = [
@@ -443,7 +443,7 @@ def nguHanhNapAm(diaChi, thienCan, xuatBanMenh=False):
         [4, False, "T2", False, "H2", False, "O2", False, "M2", False, "K2"],
         [5, "H3", False, "O3", False, "M3", False, "K3", False, "T3", False],
         [6, False, "H3", False, "O3", False, "M3", False, "K3", False, "T3"],
-        [7, "K4", False, "T4", False, "H4", False, "O4", False, "M4", False],
+        [7, "K4", False, "T4", False, "H4", False, "O4", False, "H4", False],
         [8, False, "K4", False, "T4", False, "H4", False, "O4", False, "M4"],
         [9, "T5", False, "H5", False, "O5", False, "M5", False, "K5", False],
         [10, False, "T5", False, "H5", False, "O5", False, "M5", False, "K5"],
@@ -617,16 +617,13 @@ def timThienMa(chiNam):
 
 
 def timPhaToai(chiNam):
-    demNghich = chiNam % 3
-    if demNghich == 0:
+    if chiNam in (1, 4, 7, 10):
         return 6
-    elif demNghich == 1:
+    elif chiNam in (3, 6, 9, 12):
         return 10
-    elif demNghich == 2:
+    elif chiNam in (2, 5, 8, 11):
         return 2
-    else:
-        raise Exception("Không tìm được Phá toái")
-
+    raise Exception("Không tìm được vị trí Phá Toái")
 
 def timTriet(canNam):
     # Giáp Kỷ, Thân Dậu cung
