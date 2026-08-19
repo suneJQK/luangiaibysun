@@ -13,10 +13,11 @@ from PIL import Image
 from github import Github, GithubException
 from google import genai
 from google.genai import types
+from google.genai.errors import APIError
 
 
 # ============================================================
-# CẤU HÌNH STREAMLIT
+# CẤU HÌNH STREAMLIT & CSS
 # ============================================================
 
 st.set_page_config(
@@ -83,10 +84,29 @@ st.markdown(
         padding-bottom: 10px;
     }
 
-    .scrollable-result-content {
-        color: #e6edf3;
-        font-size: 1rem;
-        line-height: 1.6;
+    /* CSS CONTAINER TẠO KHUNG CUỘN ĐỘC LẬP CHO BÀI LUẬN GIẢI */
+    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor) {
+        max-height: 75vh;
+        overflow-y: auto;
+        padding: 15px;
+        border: 1px solid #30363d;
+        border-radius: 10px;
+        background-color: #161b22;
+    }
+
+    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar {
+        width: 8px;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-track {
+        background: #0d1117;
+        border-radius: 8px;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-thumb {
+        background: #30363d;
+        border-radius: 8px;
+    }
+    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-thumb:hover {
+        background: #d4af37;
     }
     </style>
     """,
@@ -99,7 +119,6 @@ st.markdown(
 # ============================================================
 
 def get_secret(name: str, default: str = "") -> str:
-    """Đọc secret từ Streamlit Secrets trước, sau đó mới đến biến môi trường."""
     try:
         value = st.secrets.get(name)
     except Exception:
@@ -152,10 +171,6 @@ def get_gemini_client(api_key: str):
 
 @st.cache_data(ttl=3600)
 def load_system_prompt():
-    """
-    Đọc TẤT CẢ .txt trong system_prompts theo thứ tự tên file.
-    Bản cũ chỉ đọc txt_files[0], khiến các chương còn lại bị bỏ qua.
-    """
     if not PROMPT_DIR.exists():
         return (
             "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp.",
@@ -255,14 +270,10 @@ def compact_text(text, max_chars=120000):
 
 
 # ============================================================
-# GITHUB - TÙY CHỌN
+# GITHUB
 # ============================================================
 
 def upload_to_github(uploaded_file):
-    """
-    Lưu ảnh lên GitHub nếu người dùng chủ động bật tính năng.
-    Dùng UUID để tránh trùng tên khi upload nhiều lần trong cùng một giây.
-    """
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "Thiếu GITHUB_TOKEN hoặc GITHUB_REPO trong Secrets."
 
@@ -318,10 +329,6 @@ def crop_12_cung_overlap(
     side_cut=0,
     overlap_px=15,
 ):
-    """
-    Cắt bố cục 4x4, trong đó 12 ô ngoài là 12 địa chi.
-    Giữ vùng overlap để tránh mất chữ nằm trên đường biên.
-    """
     if img is None:
         return {}
 
@@ -341,27 +348,13 @@ def crop_12_cung_overlap(
     cropped_cungs = {}
 
     for cung_name, (col, row) in GRID_MAP.items():
-        left = max(
-            0,
-            int(left_start + col * w_step - overlap_px),
-        )
-        top = max(
-            0,
-            int(top_start + row * h_step - overlap_px),
-        )
-        right = min(
-            width,
-            int(left_start + (col + 1) * w_step + overlap_px),
-        )
-        bottom = min(
-            height,
-            int(top_start + (row + 1) * h_step + overlap_px),
-        )
+        left = max(0, int(left_start + col * w_step - overlap_px))
+        top = max(0, int(top_start + row * h_step - overlap_px))
+        right = min(width, int(left_start + (col + 1) * w_step + overlap_px))
+        bottom = min(height, int(top_start + (row + 1) * h_step + overlap_px))
 
         if right > left and bottom > top:
-            cropped_cungs[cung_name] = img.crop(
-                (left, top, right, bottom)
-            )
+            cropped_cungs[cung_name] = img.crop((left, top, right, bottom))
 
     return cropped_cungs
 
@@ -517,6 +510,7 @@ Hãy ưu tiên tính nhất quán và kiểm tra chéo hơn là viết dài.
 
 def generate_analysis(
     image: Image.Image,
+    cropped_dict: dict,
     system_prompt,
     engine_data,
     books_text,
@@ -533,31 +527,31 @@ def generate_analysis(
         user_note=user_note,
     )
 
-    image_bytes = image_to_bytes(image, "PNG")
+    contents = [types.Part.from_text(text=prompt)]
 
-    contents = [
-        types.Part.from_text(text=prompt),
-        types.Part.from_bytes(
-            data=image_bytes,
-            mime_type="image/png",
-        ),
-    ]
+    image_bytes = image_to_bytes(image, "PNG")
+    contents.append(types.Part.from_bytes(data=image_bytes, mime_type="image/png"))
+
+    if cropped_dict:
+        contents.append(types.Part.from_text(text="\n\nCHI TIẾT MẢNH CẮT 12 CUNG:\n"))
+        for name, crop_img in cropped_dict.items():
+            contents.append(types.Part.from_text(text=f"Mảnh cắt Cung {name}:"))
+            crop_bytes = image_to_bytes(crop_img, "PNG")
+            contents.append(types.Part.from_bytes(data=crop_bytes, mime_type="image/png"))
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",  # Đã sửa lại đúng tên gemini-3.6-flash theo yêu cầu
         contents=contents,
         config=types.GenerateContentConfig(
             temperature=0.2,
-            max_output_tokens=30000,
+            max_output_tokens=8192,
         ),
     )
 
     text = getattr(response, "text", None)
 
     if not text:
-        raise RuntimeError(
-            "Gemini không trả về nội dung. Hãy kiểm tra API key, model và ảnh."
-        )
+        raise RuntimeError("Gemini không trả về nội dung. Hãy kiểm tra API key, model và ảnh.")
 
     return text
 
@@ -603,7 +597,12 @@ QUY TẮC TRẢ LỜI:
 """
 
 
-def ask_chat(question, selected_year):
+def ask_chat(
+    question,
+    selected_year,
+    main_system_prompt,
+    engine_data,
+):
     client = get_gemini_client(API_KEY)
 
     analysis_context = st.session_state.get(
@@ -620,7 +619,6 @@ def ask_chat(question, selected_year):
 
     history_parts = []
 
-    # Giới hạn lịch sử để tránh prompt phình quá lớn.
     for message in st.session_state.chat_messages[-12:]:
         role = message.get("role", "user")
         content = message.get("content", "")
@@ -639,11 +637,11 @@ CÂU HỎI MỚI:
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",
+        model="gemini-3.6-flash",  # Đã sửa lại đúng tên gemini-3.6-flash theo yêu cầu
         contents=full_prompt,
         config=types.GenerateContentConfig(
             temperature=0.25,
-            max_output_tokens=12000,
+            max_output_tokens=8192,
         ),
     )
 
@@ -711,10 +709,6 @@ with st.sidebar:
     save_to_github = st.checkbox(
         "☁️ Lưu ảnh lá số lên GitHub",
         value=False,
-        help=(
-            "Tắt mặc định để tránh tự động lưu ảnh cá nhân. "
-            "Chỉ bật nếu repository của bạn phù hợp với việc lưu dữ liệu này."
-        ),
     )
 
     if st.button("🗑️ Xóa bài luận & hội thoại"):
@@ -722,6 +716,7 @@ with st.sidebar:
         st.session_state.chat_messages = []
         st.session_state.current_image_bytes = None
         st.session_state.current_image_name = ""
+        st.session_state.cropped_dict = {}
         st.rerun()
 
 
@@ -738,10 +733,7 @@ col_input, col_output = st.columns([1, 1], gap="large")
 
 with col_input:
 
-    with st.expander(
-        "📸 TẢI LÊN & CẤU HÌNH LÁ SỐ",
-        expanded=True,
-    ):
+    with st.expander("📸 TẢI LÊN & CẤU HÌNH LÁ SỐ", expanded=True):
         uploaded_file = st.file_uploader(
             "Tải lên ảnh lá số:",
             type=["jpg", "jpeg", "png", "webp"],
@@ -771,8 +763,6 @@ with col_input:
         overlap_val = 15
 
         if uploaded_file:
-            # Lưu bytes vào session để nút phân tích không phụ thuộc
-            # object UploadedFile sau các lần rerun.
             raw_bytes = uploaded_file.getvalue()
 
             if (
@@ -799,49 +789,13 @@ with col_input:
             if image_error:
                 st.error(image_error)
             else:
-                st.session_state.current_image = image
+                with st.expander("🛠️ Căn chỉnh lề & Vùng phủ đường biên", expanded=False):
+                    top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
+                    bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
+                    side_val = st.slider("↔️ Bỏ lề TRÁI/PHẢI (%):", 0, 15, 0, 1)
+                    overlap_val = st.slider("🔍 Vùng phủ đường biên (Px):", 5, 60, 15, 1)
 
-                with st.expander(
-                    "🛠️ Căn chỉnh lề & Vùng phủ đường biên",
-                    expanded=False,
-                ):
-                    top_val = st.slider(
-                        "⬆️ Bỏ lề TRÊN (%):",
-                        0,
-                        25,
-                        0,
-                        1,
-                    )
-
-                    bottom_val = st.slider(
-                        "⬇️ Bỏ lề DƯỚI (%):",
-                        0,
-                        25,
-                        3,
-                        1,
-                    )
-
-                    side_val = st.slider(
-                        "↔️ Bỏ lề TRÁI/PHẢI (%):",
-                        0,
-                        15,
-                        0,
-                        1,
-                    )
-
-                    overlap_val = st.slider(
-                        "🔍 Vùng phủ đường biên (Px):",
-                        5,
-                        60,
-                        15,
-                        1,
-                    )
-
-                st.image(
-                    image,
-                    caption="Lá số đã tải lên",
-                    use_container_width=True,
-                )
+                st.image(image, caption="Lá số đã tải lên", use_container_width=True)
 
                 cropped_dict = crop_12_cung_overlap(
                     image,
@@ -855,10 +809,7 @@ with col_input:
 
                 with st.expander("🔍 Xem mảnh cắt 12 Cung", expanded=False):
                     crop_cols = st.columns(3)
-
-                    for idx, (name, crop_img) in enumerate(
-                        cropped_dict.items()
-                    ):
+                    for idx, (name, crop_img) in enumerate(cropped_dict.items()):
                         crop_cols[idx % 3].image(
                             crop_img,
                             caption=f"Cung {name}",
@@ -878,10 +829,7 @@ with col_input:
 
 if analyze_clicked:
     if not API_KEY:
-        st.error(
-            "❌ Chưa cấu hình GEMINI_API_KEY. "
-            "Hãy thêm key vào Streamlit Secrets hoặc biến môi trường."
-        )
+        st.error("❌ Chưa cấu hình GEMINI_API_KEY.")
     elif not uploaded_file:
         st.warning("⚠️ Hãy tải ảnh lá số trước.")
     elif prompt_err:
@@ -889,22 +837,16 @@ if analyze_clicked:
     elif engine_err:
         st.error(f"❌ Engine lỗi: {engine_err}")
     else:
-        image = st.session_state.get("current_image")
+        image, image_error = uploaded_file_to_image(uploaded_file)
 
-        if image is None:
-            image, image_error = uploaded_file_to_image(uploaded_file)
-
-            if image_error:
-                st.error(image_error)
-                image = None
-
-        if image is not None:
-            with st.spinner(
-                "🔮 Gemini đang đọc lá số và thực hiện luận giải..."
-            ):
+        if image_error:
+            st.error(image_error)
+        else:
+            with st.spinner("🔮 Gemini đang đọc lá số và thực hiện luận giải..."):
                 try:
                     result = generate_analysis(
                         image=image,
+                        cropped_dict=st.session_state.get("cropped_dict", {}),
                         system_prompt=main_system_prompt,
                         engine_data=engine_data,
                         books_text=books_text,
@@ -913,18 +855,18 @@ if analyze_clicked:
                     )
 
                     st.session_state.analysis_result = result
-
-                    # Reset chat khi tạo một bài luận giải mới.
                     st.session_state.chat_messages = []
 
                     st.success("✅ Đã hoàn thành bài luận giải.")
                     st.rerun()
 
+                except APIError as exc:
+                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                        st.error("⚠️ Hạn ngạch API đã vượt quá giới hạn (429 Resource Exhausted). Vui lòng thử lại sau vài phút hoặc thay thế API key khác.")
+                    else:
+                        st.error(f"❌ Lỗi Gemini API: {exc}")
                 except Exception as exc:
-                    st.error(
-                        "❌ Không thể hoàn thành luận giải.\n\n"
-                        f"Chi tiết: {exc}"
-                    )
+                    st.error(f"❌ Không thể hoàn thành luận giải.\n\nChi tiết: {exc}")
 
 
 # ============================================================
@@ -941,12 +883,10 @@ with col_output:
     analysis_result = st.session_state.get("analysis_result", "")
 
     if analysis_result:
-        st.markdown(
-            '<div class="scrollable-result-content">',
-            unsafe_allow_html=True,
-        )
-        st.markdown(analysis_result)
-        st.markdown("</div>", unsafe_allow_html=True)
+        analysis_container = st.container()
+        with analysis_container:
+            st.markdown('<div class="scrollable-anchor"></div>', unsafe_allow_html=True)
+            st.markdown(analysis_result)
 
         st.download_button(
             "⬇️ Tải bài luận giải (.txt)",
@@ -956,10 +896,7 @@ with col_output:
             use_container_width=True,
         )
     else:
-        st.info(
-            "Chưa có bài luận giải. "
-            "Hãy tải ảnh lá số và bấm **BẮT ĐẦU LUẬN GIẢI**."
-        )
+        st.info("Chưa có bài luận giải. Hãy tải ảnh lá số và bấm **BẮT ĐẦU LUẬN GIẢI**.")
 
 
 # ============================================================
@@ -978,48 +915,39 @@ for msg in st.session_state.chat_messages:
         st.markdown(msg["content"])
 
 
-user_question = st.chat_input(
-    "Nhập câu hỏi về lá số (Ví dụ: Hạn năm 2026 cần lưu ý gì?)..."
-)
+user_question = st.chat_input("Nhập câu hỏi về lá số (Ví dụ: Hạn năm 2026 cần lưu ý gì?)...")
 
 if user_question:
     if not API_KEY:
         st.error("❌ Chưa cấu hình GEMINI_API_KEY.")
     else:
-        st.session_state.chat_messages.append(
-            {
-                "role": "user",
-                "content": user_question,
-            }
-        )
+        st.session_state.chat_messages.append({"role": "user", "content": user_question})
 
         with st.chat_message("user"):
             st.markdown(user_question)
 
         with st.chat_message("assistant"):
-            with st.spinner("🔮 AI đang suy luận câu trả lời..."):
+            with st.spinner("🔮 Gemini đang suy luận câu trả lời..."):
                 try:
                     answer = ask_chat(
                         question=user_question,
                         selected_year=selected_year,
+                        main_system_prompt=main_system_prompt,
+                        engine_data=engine_data,
                     )
 
                     st.markdown(answer)
 
-                    st.session_state.chat_messages.append(
-                        {
-                            "role": "assistant",
-                            "content": answer,
-                        }
-                    )
+                    st.session_state.chat_messages.append({"role": "assistant", "content": answer})
 
+                except APIError as exc:
+                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                        error_message = "⚠️ Hạn ngạch gọi API đã hết (429 Resource Exhausted). Hãy đợi ít phút rồi gửi lại câu hỏi."
+                    else:
+                        error_message = f"❌ Lỗi Gemini API: {exc}"
+                    st.error(error_message)
+                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
                 except Exception as exc:
                     error_message = f"❌ Lỗi khi hỏi Gemini: {exc}"
                     st.error(error_message)
-
-                    st.session_state.chat_messages.append(
-                        {
-                            "role": "assistant",
-                            "content": error_message,
-                        }
-                    )
+                    st.session_state.chat_messages.append({"role": "assistant", "content": error_message})
