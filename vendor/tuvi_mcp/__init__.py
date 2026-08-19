@@ -1,20 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Locally vendored TuViMCP package.
+
+The chart engine is consumed from ``vendor.tuvi_mcp._engine``. The full MCP
+server layer is intentionally not imported here so the Streamlit app does
+not require the external MCP server dependencies.
 """
-(c) 2026 nmhaaa3218 <manh.ha.3218@gmail.com>
-"""
 
-# Tu Vi Horoscope MCP Server Package
-__version__ = "0.4.1"
-
-from .horoscope import AuspiciousResult, BirthInfo, Calendar, Gender, Horoscope, HoroscopeResult, TransitResult
-
-__all__ = [
-    "AuspiciousResult",
-    "BirthInfo",
-    "Calendar",
-    "Gender",
-    "Horoscope",
-    "HoroscopeResult",
-    "TransitResult",
-    "__version__",
-]
+__version__ = "0.4.1-vendored"
