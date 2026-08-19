@@ -257,10 +257,7 @@ def compact_text(text, max_chars=120000):
 # ============================================================
 
 def upload_to_github(uploaded_file):
-    """
-    Lưu ảnh lên GitHub nếu người dùng chủ động bật tính năng.
-    Dùng UUID để tránh trùng tên khi upload nhiều lần trong cùng một giây.
-    """
+    """Lưu ảnh lên GitHub nếu người dùng chủ động bật tính năng."""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         return False, "Thiếu GITHUB_TOKEN hoặc GITHUB_REPO trong Secrets."
 
@@ -528,7 +525,6 @@ def generate_analysis(
         ),
     ]
 
-    # Gửi kèm 12 mảnh cắt giúp AI nhận diện chi tiết chữ nhỏ/mờ
     if cropped_dict:
         contents.append(types.Part.from_text(text="\n\nCHI TIẾT MẢNH CẮT 12 CUNG:\n"))
         for name, crop_img in cropped_dict.items():
@@ -696,10 +692,6 @@ with st.sidebar:
     save_to_github = st.checkbox(
         "☁️ Lưu ảnh lá số lên GitHub",
         value=False,
-        help=(
-            "Tắt mặc định để tránh tự động lưu ảnh cá nhân. "
-            "Chỉ bật nếu repository của bạn phù hợp với việc lưu dữ liệu này."
-        ),
     )
 
     if st.button("🗑️ Xóa bài luận & hội thoại"):
@@ -719,7 +711,7 @@ col_input, col_output = st.columns([1, 1], gap="large")
 
 
 # ============================================================
-# CỘT INPUT
+# CỘT INPUT & CHAT (BÊN TRÁI)
 # ============================================================
 
 with col_input:
@@ -748,7 +740,7 @@ with col_input:
                 "tu_vi_engine.json và sử dụng câu phú từ kho sách "
                 "khi dữ liệu thực sự có căn cứ."
             ),
-            height=100,
+            height=80,
         )
 
         top_val = 0
@@ -789,37 +781,10 @@ with col_input:
                     "🛠️ Căn chỉnh lề & Vùng phủ đường biên",
                     expanded=False,
                 ):
-                    top_val = st.slider(
-                        "⬆️ Bỏ lề TRÊN (%):",
-                        0,
-                        25,
-                        0,
-                        1,
-                    )
-
-                    bottom_val = st.slider(
-                        "⬇️ Bỏ lề DƯỚI (%):",
-                        0,
-                        25,
-                        3,
-                        1,
-                    )
-
-                    side_val = st.slider(
-                        "↔️ Bỏ lề TRÁI/PHẢI (%):",
-                        0,
-                        15,
-                        0,
-                        1,
-                    )
-
-                    overlap_val = st.slider(
-                        "🔍 Vùng phủ đường biên (Px):",
-                        5,
-                        60,
-                        15,
-                        1,
-                    )
+                    top_val = st.slider("⬆️ Bỏ lề TRÊN (%):", 0, 25, 0, 1)
+                    bottom_val = st.slider("⬇️ Bỏ lề DƯỚI (%):", 0, 25, 3, 1)
+                    side_val = st.slider("↔️ Bỏ lề TRÁI/PHẢI (%):", 0, 15, 0, 1)
+                    overlap_val = st.slider("🔍 Vùng phủ đường biên (Px):", 5, 60, 15, 1)
 
                 st.image(
                     image,
@@ -839,10 +804,7 @@ with col_input:
 
                 with st.expander("🔍 Xem mảnh cắt 12 Cung", expanded=False):
                     crop_cols = st.columns(3)
-
-                    for idx, (name, crop_img) in enumerate(
-                        cropped_dict.items()
-                    ):
+                    for idx, (name, crop_img) in enumerate(cropped_dict.items()):
                         crop_cols[idx % 3].image(
                             crop_img,
                             caption=f"Cung {name}",
@@ -855,70 +817,28 @@ with col_input:
             use_container_width=True,
         )
 
+    # --------------------------------------------------------
+    # KHUNG CHAT ĐƯỢC CHUYỂN SANG BÊN TRÁI (VÙNG MÀU XANH)
+    # --------------------------------------------------------
+    st.markdown(
+        '<div class="analysis-header-title" style="margin-top: 15px;">💬 TRÒ CHUYỆN & HỎI ĐÁP VỚI AI</div>',
+        unsafe_allow_html=True,
+    )
 
-# ============================================================
-# XỬ LÝ LUẬN GIẢI
-# ============================================================
+    # Khung chứa nội dung tin nhắn có thanh cuộn riêng
+    chat_container = st.container(height=450)
 
-if analyze_clicked:
-    if not API_KEY:
-        st.error(
-            "❌ Chưa cấu hình GEMINI_API_KEY. "
-            "Hãy thêm key vào Streamlit Secrets hoặc biến môi trường."
-        )
-    elif not uploaded_file:
-        st.warning("⚠️ Hãy tải ảnh lá số trước.")
-    elif prompt_err:
-        st.error(f"❌ System Prompt lỗi: {prompt_err}")
-    elif engine_err:
-        st.error(f"❌ Engine lỗi: {engine_err}")
-    else:
-        image = st.session_state.get("current_image")
-
-        if image is None:
-            image, image_error = uploaded_file_to_image(uploaded_file)
-
-            if image_error:
-                st.error(image_error)
-                image = None
-
-        if image is not None:
-            with st.spinner(
-                "🔮 Gemini đang đọc lá số và thực hiện luận giải..."
-            ):
-                try:
-                    result = generate_analysis(
-                        image=image,
-                        cropped_dict=st.session_state.get("cropped_dict", {}),
-                        system_prompt=main_system_prompt,
-                        engine_data=engine_data,
-                        books_text=books_text,
-                        selected_year=selected_year,
-                        user_note=user_note,
-                    )
-
-                    st.session_state.analysis_result = result
-
-                    # Reset chat khi tạo một bài luận giải mới.
-                    st.session_state.chat_messages = []
-
-                    st.success("✅ Đã hoàn thành bài luận giải.")
-                    st.rerun()
-
-                except APIError as exc:
-                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                        st.error("⚠️ Hạn ngạch API đã vượt quá giới hạn (429 Resource Exhausted). Vui lòng thử lại sau vài phút hoặc kiểm tra lại API key.")
-                    else:
-                        st.error(f"❌ Lỗi Gemini API: {exc}")
-                except Exception as exc:
-                    st.error(
-                        "❌ Không thể hoàn thành luận giải.\n\n"
-                        f"Chi tiết: {exc}"
-                    )
+    with chat_container:
+        if not st.session_state.chat_messages:
+            st.info("Chưa có tin nhắn nào. Bạn có thể hỏi bất kỳ câu nào về lá số dưới đây.")
+        else:
+            for msg in st.session_state.chat_messages:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
 
 
 # ============================================================
-# CỘT OUTPUT (LUẬN GIẢI CÓ THANH CUỘN RIÊNG)
+# CỘT OUTPUT (BÀI LUẬN GIẢI BÊN PHẢI)
 # ============================================================
 
 with col_output:
@@ -931,7 +851,6 @@ with col_output:
     analysis_result = st.session_state.get("analysis_result", "")
 
     if analysis_result:
-        # Sử dụng st.container với height để ép tạo khung cuộn riêng độc lập
         with st.container(height=700):
             st.markdown(
                 f'<div class="scrollable-result-content">{analysis_result}</div>',
@@ -953,19 +872,57 @@ with col_output:
 
 
 # ============================================================
-# CHAT HỎI ĐÁP
+# XỬ LÝ SỰ KIỆN NÚT BẮT ĐẦU LUẬN GIẢI
 # ============================================================
 
-st.divider()
+if analyze_clicked:
+    if not API_KEY:
+        st.error("❌ Chưa cấu hình GEMINI_API_KEY.")
+    elif not uploaded_file:
+        st.warning("⚠️ Hãy tải ảnh lá số trước.")
+    elif prompt_err:
+        st.error(f"❌ System Prompt lỗi: {prompt_err}")
+    elif engine_err:
+        st.error(f"❌ Engine lỗi: {engine_err}")
+    else:
+        image = st.session_state.get("current_image")
 
-st.markdown(
-    '<div class="analysis-header-title">💬 TRÒ CHUYỆN & HỎI ĐÁP VỚI AI</div>',
-    unsafe_allow_html=True,
-)
+        if image is None:
+            image, image_error = uploaded_file_to_image(uploaded_file)
+            if image_error:
+                st.error(image_error)
+                image = None
 
-for msg in st.session_state.chat_messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+        if image is not None:
+            with st.spinner("🔮 Gemini đang đọc lá số và thực hiện luận giải..."):
+                try:
+                    result = generate_analysis(
+                        image=image,
+                        cropped_dict=st.session_state.get("cropped_dict", {}),
+                        system_prompt=main_system_prompt,
+                        engine_data=engine_data,
+                        books_text=books_text,
+                        selected_year=selected_year,
+                        user_note=user_note,
+                    )
+
+                    st.session_state.analysis_result = result
+                    st.session_state.chat_messages = []
+                    st.success("✅ Đã hoàn thành bài luận giải.")
+                    st.rerun()
+
+                except APIError as exc:
+                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                        st.error("⚠️ Hạn ngạch API đã vượt quá giới hạn (429 Resource Exhausted). Vui lòng thử lại sau vài phút.")
+                    else:
+                        st.error(f"❌ Lỗi Gemini API: {exc}")
+                except Exception as exc:
+                    st.error(f"❌ Không thể hoàn thành luận giải.\n\nChi tiết: {exc}")
+
+
+# ============================================================
+# Ô NHẬP TIN NHẮN (ST.CHAT_INPUT)
+# ============================================================
 
 user_question = st.chat_input(
     "Nhập câu hỏi về lá số (Ví dụ: Hạn năm 2026 cần lưu ý gì?)..."
@@ -982,47 +939,41 @@ if user_question:
             }
         )
 
-        with st.chat_message("user"):
-            st.markdown(user_question)
+        try:
+            answer = ask_chat(
+                question=user_question,
+                selected_year=selected_year,
+                main_system_prompt=main_system_prompt,
+                engine_data=engine_data,
+            )
 
-        with st.chat_message("assistant"):
-            with st.spinner("🔮 AI đang suy luận câu trả lời..."):
-                try:
-                    answer = ask_chat(
-                        question=user_question,
-                        selected_year=selected_year,
-                        main_system_prompt=main_system_prompt,
-                        engine_data=engine_data,
-                    )
+            st.session_state.chat_messages.append(
+                {
+                    "role": "assistant",
+                    "content": answer,
+                }
+            )
+            st.rerun()
 
-                    st.markdown(answer)
+        except APIError as exc:
+            if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                error_message = "⚠️ Hạn ngạch gọi API đã hết (429 Resource Exhausted). Hãy đợi ít phút rồi gửi lại câu hỏi."
+            else:
+                error_message = f"❌ Lỗi Gemini API: {exc}"
 
-                    st.session_state.chat_messages.append(
-                        {
-                            "role": "assistant",
-                            "content": answer,
-                        }
-                    )
-
-                except APIError as exc:
-                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                        error_message = "⚠️ Hạn ngạch gọi API đã hết (429 Resource Exhausted). Hãy đợi ít phút rồi gửi lại câu hỏi."
-                    else:
-                        error_message = f"❌ Lỗi Gemini API: {exc}"
-                    st.error(error_message)
-                    st.session_state.chat_messages.append(
-                        {
-                            "role": "assistant",
-                            "content": error_message,
-                        }
-                    )
-                except Exception as exc:
-                    error_message = f"❌ Lỗi khi hỏi Gemini: {exc}"
-                    st.error(error_message)
-
-                    st.session_state.chat_messages.append(
-                        {
-                            "role": "assistant",
-                            "content": error_message,
-                        }
-                    )
+            st.session_state.chat_messages.append(
+                {
+                    "role": "assistant",
+                    "content": error_message,
+                }
+            )
+            st.rerun()
+        except Exception as exc:
+            error_message = f"❌ Lỗi khi hỏi Gemini: {exc}"
+            st.session_state.chat_messages.append(
+                {
+                    "role": "assistant",
+                    "content": error_message,
+                }
+            )
+            st.rerun()
