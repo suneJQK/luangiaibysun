@@ -37,7 +37,10 @@ def load_json_file(path):
 def load_system_prompt():
     files=sorted(PROMPT_DIR.glob("*.txt"),key=lambda p:p.name.lower()) if PROMPT_DIR.exists() else []
     if not files: return "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp.",None
-    try: return "\n\n".join(f"===== {p.name} =====\n{p.read_text(encoding='utf-8').strip()}" for p in files),None
+    try:
+        text="\n\n".join(p.read_text(encoding="utf-8").strip() for p in files if p.read_text(encoding="utf-8").strip())
+        if not text: return "", "System prompt rỗng."
+        return text,None
     except Exception as e: return "",str(e)
 def compact(data,limit):
     text=data if isinstance(data,str) else json.dumps(data,ensure_ascii=False,indent=2)
@@ -52,10 +55,12 @@ def upload_to_github(f):
         repo.create_file(path=path,message=f"Upload lá số: {name}",content=f.getvalue()); return True,f"https://github.com/{GITHUB_REPO}/blob/main/{path}"
     except (GithubException,Exception) as e: return False,str(e)
 SCHEMA={"type":"object","properties":{"tong_quan":{"type":"string"},"kiem_tra_du_lieu":{"type":"array","items":{"type":"string"}},"luan_12_cung":{"type":"array","items":{"type":"object","properties":{"cung":{"type":"string"},"ket_luan":{"type":"string"},"can_cu":{"type":"array","items":{"type":"string"}}},"required":["cung","ket_luan","can_cu"]}},"dai_van":{"type":"array","items":{"type":"string"}},"tieu_han":{"type":"array","items":{"type":"string"}},"ket_luan":{"type":"array","items":{"type":"string"}},"canh_bao":{"type":"array","items":{"type":"string"}}},"required":["tong_quan","kiem_tra_du_lieu","luan_12_cung","dai_van","tieu_han","ket_luan","canh_bao"]}
-def make_prompt(system,engine,books,chart,calc,year,note):
-    return f"""Bạn là chuyên gia Tử Vi. CHỈ LUẬN từ Chart JSON và Calculation JSON đã được Python xử lý. Không nhận ảnh, không tự nhìn ảnh, không bịa dữ liệu. Nếu thiếu dữ liệu, ghi rõ. Năm {year}. Yêu cầu: {note}\n\nSYSTEM:\n{system}\n\nCHART JSON:\n{compact(chart,100000)}\n\nCALCULATION JSON:\n{compact(calc,80000)}\n\nENGINE:\n{compact(engine,100000)}\n\nBOOKS:\n{books}\n\nTrả JSON đúng schema. Không kết luận từ một sao đơn lẻ. Không tạo trích dẫn sách không có trong BOOKS."""
+def make_prompt(engine,books,chart,calc,year,note):
+    return f"""Năm luận: {year}\nYêu cầu bổ sung của người dùng: {note}\n\nDỮ LIỆU ĐÃ ĐƯỢC PYTHON XỬ LÝ VÀ XÁC NHẬN\nCHART JSON:\n{compact(chart,100000)}\n\nCALCULATION JSON:\n{compact(calc,80000)}\n\nENGINE:\n{compact(engine,100000)}\n\nBOOKS:\n{books}\n\nHãy tuân thủ toàn bộ SYSTEM INSTRUCTION được cung cấp ở cấp system. Chỉ sử dụng các dữ liệu trên. Nếu thiếu dữ liệu, ghi rõ. Trả JSON đúng schema. Không kết luận từ một sao đơn lẻ. Không tạo trích dẫn sách không có trong BOOKS."""
+def gemini_config(system_prompt, **kwargs):
+    return types.GenerateContentConfig(system_instruction=system_prompt, **kwargs)
 def generate_analysis(chart,calc,system,engine,books,year,note):
-    r=get_gemini_client(API_KEY).models.generate_content(model="gemini-3.6-flash",contents=make_prompt(system,engine,books,chart,calc,year,note),config=types.GenerateContentConfig(temperature=0.15,max_output_tokens=30000,response_mime_type="application/json",response_schema=SCHEMA))
+    r=get_gemini_client(API_KEY).models.generate_content(model="gemini-3.6-flash",contents=make_prompt(engine,books,chart,calc,year,note),config=gemini_config(system,temperature=0.15,max_output_tokens=30000,response_mime_type="application/json",response_schema=SCHEMA))
     return getattr(r,"text","")
 def render_analysis(raw):
     try:
@@ -73,7 +78,7 @@ if "chat_messages" not in st.session_state: st.session_state.chat_messages=[]
 system_prompt,prompt_err=load_system_prompt(); engine,engine_err=load_json_file(ENGINE_FILE); books,books_err=load_books()
 st.title("☯️ TỬ VI ĐẨU SỐ — PYTHON OCR → ENGINE → GEMINI"); st.caption("Ảnh chỉ xử lý local. Gemini chỉ nhận Chart JSON đã xác nhận.")
 with st.sidebar:
-    st.write("Gemini API:","✅" if API_KEY else "❌"); st.write("OCR Python:","✅ EasyOCR"); st.write("Engine:","✅" if not engine_err else "❌")
+    st.write("Gemini API:","✅" if API_KEY else "❌"); st.write("OCR Python:","✅ EasyOCR"); st.write("Engine:","✅" if not engine_err else "❌"); st.write("System Prompt:","✅" if not prompt_err else "❌")
     if st.button("🗑️ Xóa phiên"):
         st.session_state.processed_data=None; st.session_state.chart_json=None; st.session_state.validation=None; st.session_state.analysis_result=""; st.session_state.confirmed=False; st.session_state.chat_messages=[]; st.rerun()
 left,right=st.columns([1,1],gap="large")
@@ -99,7 +104,7 @@ with left:
             if prompt_err or engine_err or books_err: st.error("Thiếu dữ liệu engine/prompt/books.")
             elif not API_KEY: st.error("Thiếu GEMINI_API_KEY.")
             else:
-                with st.spinner("Python tính dữ liệu → Gemini chỉ diễn giải..."):
+                with st.spinner("Python tính dữ liệu → Gemini áp dụng System Prompt → diễn giải..."):
                     calc=calculate_chart(st.session_state.chart_json); st.session_state.analysis_result=generate_analysis(st.session_state.chart_json,calc,system_prompt,engine,books,year,note)
         if st.checkbox("☁️ Lưu ảnh lên GitHub",False) and st.button("Lưu ảnh"):
             ok,msg=upload_to_github(uploaded); st.success(msg) if ok else st.warning(msg)
@@ -112,4 +117,5 @@ for m in st.session_state.chat_messages:
     with st.chat_message(m["role"]): st.markdown(m["content"])
 q=st.chat_input("Hỏi về dữ liệu đã xác nhận...")
 if q and st.session_state.analysis_result:
-    r=get_gemini_client(API_KEY).models.generate_content(model="gemini-3.6-flash",contents=f"Chỉ trả lời dựa trên JSON luận giải sau, không nhìn ảnh và không thêm dữ liệu ngoài nguồn.\n{st.session_state.analysis_result}\nCâu hỏi: {q}",config=types.GenerateContentConfig(temperature=0.2,max_output_tokens=10000)); ans=getattr(r,"text",""); st.session_state.chat_messages += [{"role":"user","content":q},{"role":"assistant","content":ans}]; st.rerun()
+    chat_system=(system_prompt+"\n\nBỔ SUNG: Khi trả lời chat, vẫn phải tuân thủ toàn bộ hệ thống trên; chỉ dùng dữ liệu luận giải đã tạo và không nhìn ảnh.")
+    r=get_gemini_client(API_KEY).models.generate_content(model="gemini-3.6-flash",contents=f"DỮ LIỆU LUẬN GIẢI ĐÃ TẠO:\n{st.session_state.analysis_result}\n\nCÂU HỎI: {q}",config=gemini_config(chat_system,temperature=0.2,max_output_tokens=10000)); ans=getattr(r,"text",""); st.session_state.chat_messages += [{"role":"user","content":q},{"role":"assistant","content":ans}]; st.rerun()
