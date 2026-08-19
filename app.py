@@ -8,12 +8,27 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import easyocr
+import numpy as np
 import streamlit as st
 from PIL import Image
 from github import Github, GithubException
 from google import genai
 from google.genai import types
 from google.genai.errors import APIError
+
+
+# ============================================================
+# TẢI MODEL OCR (CASHED)
+# ============================================================
+
+@st.cache_resource
+def load_ocr_reader():
+    """Khởi tạo EasyOCR reader một lần duy nhất để tối ưu hiệu năng."""
+    return easyocr.Reader(["vi", "en"], gpu=False)
+
+
+reader = load_ocr_reader()
 
 
 # ============================================================
@@ -128,6 +143,7 @@ DEFAULTS = {
     "current_image_bytes": None,
     "current_image_name": "",
     "cropped_dict": {},
+    "extracted_data": {},
     "last_uploaded": "",
 }
 
@@ -287,7 +303,7 @@ def upload_to_github(uploaded_file):
 
 
 # ============================================================
-# XỬ LÝ ẢNH / CẮT 12 CUNG
+# XỬ LÝ ẢNH & OCR (PYTHON TỰ XỬ LÝ)
 # ============================================================
 
 GRID_MAP = {
@@ -313,10 +329,7 @@ def crop_12_cung_overlap(
     side_cut=0,
     overlap_px=15,
 ):
-    """
-    Cắt bố cục 4x4, trong đó 12 ô ngoài là 12 địa chi.
-    Giữ vùng overlap để tránh mất chữ nằm trên đường biên.
-    """
+    """Cắt bố cục 4x4 thành 12 ô địa chi."""
     if img is None:
         return {}
 
@@ -347,10 +360,14 @@ def crop_12_cung_overlap(
     return cropped_cungs
 
 
-def image_to_bytes(image: Image.Image, fmt="PNG") -> bytes:
-    buffer = io.BytesIO()
-    image.save(buffer, format=fmt)
-    return buffer.getvalue()
+def extract_text_from_cungs(cropped_dict):
+    """Python dùng EasyOCR bóc tách chữ từ 12 mảnh cắt."""
+    extracted_data = {}
+    for cung_name, crop_img in cropped_dict.items():
+        img_np = np.array(crop_img)
+        text_list = reader.readtext(img_np, detail=0)
+        extracted_data[cung_name] = text_list
+    return extracted_data
 
 
 def uploaded_file_to_image(uploaded_file):
@@ -363,10 +380,11 @@ def uploaded_file_to_image(uploaded_file):
 
 
 # ============================================================
-# PROMPT LUẬN GIẢI
+# PROMPT LUẬN GIẢI (CHỈ DÙNG DỮ LIỆU TEXT)
 # ============================================================
 
 def build_analysis_prompt(
+    extracted_data,
     system_prompt,
     engine_data,
     books_text,
@@ -375,15 +393,21 @@ def build_analysis_prompt(
 ):
     engine_text = compact_json(engine_data, 120000)
     books_reference = compact_text(books_text, 100000)
+    ocr_json_text = json.dumps(extracted_data, ensure_ascii=False, indent=2)
 
     return f"""
-BẠN ĐANG THỰC HIỆN LUẬN GIẢI MỘT LÁ SỐ TỬ VI ĐẨU SỐ.
+BẠN ĐANG THỰC HIỆN LUẬN GIẢI MỘT LÁ SỐ TỬ VI ĐẨU SỐ DỰA TRÊN DỮ LIỆU VĂN BẢN (OCR) ĐÃ ĐƯỢC PYTHON BÓC TÁCH.
 
 NĂM CẦN LUẬN TIỂU HẠN/LƯU NIÊN:
 {selected_year}
 
 YÊU CẦU THÊM CỦA NGƯỜI DÙNG:
 {user_note}
+
+============================================================
+DỮ LIỆU CÁC CUNG ĐÃ BÓC TÁCH TỪ PYTHON (OCR TEXT):
+============================================================
+{ocr_json_text}
 
 ============================================================
 SYSTEM PROMPT / BỘ QUY TẮC LUẬN GIẢI
@@ -401,28 +425,19 @@ BOOKS_CACHE.JSON - KHO SÁCH / CÂU PHÚ THAM KHẢO
 {books_reference}
 
 ============================================================
-NGUYÊN TẮC XỬ LÝ ẢNH
+NGUYÊN TẮC XỬ LÝ DỮ LIỆU OCR
 ============================================================
 
-1. Đọc toàn bộ lá số trước khi kết luận.
-2. Không được suy đoán vị trí sao nếu ảnh không đủ rõ.
+1. Phân tích hoàn toàn dựa vào dữ liệu chữ đã trích xuất từ 12 cung.
+2. Nếu OCR có lỗi chính tả nhỏ, hãy tự điều chỉnh đúng tên sao dựa trên ngữ cảnh Tử Vi.
 3. Phân biệt chính tinh, phụ tinh, sát tinh, bại tinh, cát tinh và Tứ Hóa.
 4. Xác định đúng Mệnh, Thân và 12 cung.
-5. Khi xét một cung phải kiểm tra:
-   - Bản cung.
-   - Tam hợp.
-   - Xung chiếu.
-   - Nhị hợp nếu hệ quy tắc yêu cầu.
-   - Giáp cung.
-   - Tuần/Triệt.
-   - Các sao hội chiếu.
+5. Khi xét một cung phải kiểm tra: Bản cung, Tam hợp, Xung chiếu, Nhị hợp, Giáp cung, Tuần/Triệt, các sao hội chiếu.
 6. Không được gọi nhầm xung chiếu thành tam hợp hoặc ngược lại.
 7. Khi luận đại vận/tiểu vận/lưu niên phải phân biệt rõ từng tầng hạn.
 8. Không được kết luận chỉ dựa vào một sao đơn lẻ.
-9. Các kết luận quan trọng phải tổng hợp từ nhiều yếu tố.
-10. Nếu dữ liệu trên ảnh không đủ để xác nhận một điểm, phải nói rõ "chưa đủ dữ liệu để xác nhận" thay vì tự bịa.
-11. Khi sử dụng câu phú hoặc lý thuyết từ BOOKS_CACHE.JSON, phải trích dẫn tên sách/tác giả và câu phú nếu dữ liệu cung cấp đủ thông tin.
-12. Không được tạo câu phú giả rồi gán cho cổ thư.
+9. Nếu dữ liệu OCR thiếu thông tin ở cung nào, ghi rõ "chưa đủ dữ liệu OCR" thay vì tự suy đoán.
+10. Trích dẫn câu phú đúng nguồn nếu dữ liệu sách có cung cấp.
 
 ============================================================
 CẤU TRÚC BÀI LUẬN GIẢI
@@ -431,74 +446,37 @@ CẤU TRÚC BÀI LUẬN GIẢI
 Hãy tạo một bài luận giải có hệ thống, không rời rạc:
 
 I. KIỂM TRA VÀ TRÍCH XUẤT DỮ LIỆU LÁ SỐ
-- Ngày giờ sinh nếu đọc được.
-- Âm/dương, mệnh/cục nếu đọc được.
-- Mệnh chủ, Thân chủ nếu đọc được.
-- Mệnh, Thân.
-- 12 cung.
-- Chính tinh/phụ tinh/sát tinh quan trọng.
+- Ngày giờ sinh (nếu OCR quét được).
+- Mệnh, Thân và vị trí 12 cung.
+- Các sao chính tinh/phụ tinh nổi bật bóc tách được.
 
 II. TỔNG QUAN MỆNH CỤC
 - Mệnh và Thân.
 - Ngũ hành bản mệnh và cục.
-- Quan hệ Mệnh-Cục nếu xác định được.
-- Thế đứng chính tinh.
-- Các cách cục nổi bật.
+- Thế đứng chính tinh và các cách cục nổi bật.
 
 III. LUẬN 12 CUNG
-Với từng cung:
-- Chính tinh.
-- Phụ tinh.
-- Sát tinh.
-- Tứ Hóa.
-- Tam hợp.
-- Xung chiếu.
-- Nhị hợp.
-- Giáp cung.
-- Tuần/Triệt.
-- Kết luận riêng của cung.
+Với từng cung: Chính tinh, Phụ tinh, Sát tinh, Tứ Hóa, Tam hợp, Xung chiếu, Nhị hợp, Giáp cung, Tuần/Triệt, Kết luận.
 
 IV. CÁC TRỤC QUAN TRỌNG
 - Mệnh – Tài – Quan.
 - Phúc – Phụ – Điền.
-- Phu Thê.
-- Tử Tức.
-- Thiên Di.
-- Tật Ách.
-- Nô Bộc.
-- Huynh Đệ.
-- Các trục có ảnh hưởng mạnh.
+- Phu Thê, Tử Tức, Thiên Di, Tật Ách, Nô Bộc, Huynh Đệ.
 
 V. ĐẠI VẬN
-- Xác định đại vận.
-- Sao trong đại vận.
-- Cung đại vận.
-- Quan hệ đại vận với nguyên cục.
-- Cát/hung.
-- Các mốc đáng chú ý.
+- Cung đại vận, các sao và đánh giá cát/hung.
 
 VI. TIỂU HẠN / LƯU NIÊN {selected_year}
-- Tiểu hạn.
-- Lưu Thái Tuế.
-- Lưu tinh nếu đọc được.
-- Tác động lên Mệnh/Thân.
-- Tác động lên Tài, Quan, Phu, Tật, Điền...
-- Tháng/nửa đầu/nửa cuối năm nếu dữ liệu cho phép.
-- Điểm cần thận trọng.
-- Điểm có thể tận dụng.
+- Tác động lên Mệnh/Thân, Tài, Quan, Phu, Tật...
+- Các điểm cần thận trọng và tận dụng.
 
 VII. KẾT LUẬN
 - 10 điểm quan trọng nhất.
-- Cát/hung theo từng lĩnh vực.
-- Những điều cần kiểm chứng nếu dữ liệu ảnh chưa đủ.
-
-Hãy ưu tiên tính nhất quán và kiểm tra chéo hơn là viết dài.
 """
 
 
 def generate_analysis(
-    image: Image.Image,
-    cropped_dict: dict,
+    extracted_data: dict,
     system_prompt,
     engine_data,
     books_text,
@@ -508,6 +486,7 @@ def generate_analysis(
     client = get_gemini_client(API_KEY)
 
     prompt = build_analysis_prompt(
+        extracted_data=extracted_data,
         system_prompt=system_prompt,
         engine_data=engine_data,
         books_text=books_text,
@@ -515,26 +494,10 @@ def generate_analysis(
         user_note=user_note,
     )
 
-    image_bytes = image_to_bytes(image, "PNG")
-
-    contents = [
-        types.Part.from_text(text=prompt),
-        types.Part.from_bytes(
-            data=image_bytes,
-            mime_type="image/png",
-        ),
-    ]
-
-    if cropped_dict:
-        contents.append(types.Part.from_text(text="\n\nCHI TIẾT MẢNH CẮT 12 CUNG:\n"))
-        for name, crop_img in cropped_dict.items():
-            contents.append(types.Part.from_text(text=f"Mảnh cắt Cung {name}:"))
-            crop_bytes = image_to_bytes(crop_img, "PNG")
-            contents.append(types.Part.from_bytes(data=crop_bytes, mime_type="image/png"))
-
+    # Gửi hoàn toàn bằng Text Prompt sang Gemini
     response = client.models.generate_content(
         model="gemini-3.6-flash",
-        contents=contents,
+        contents=prompt,
         config=types.GenerateContentConfig(
             temperature=0.2,
             max_output_tokens=30000,
@@ -545,7 +508,7 @@ def generate_analysis(
 
     if not text:
         raise RuntimeError(
-            "Gemini không trả về nội dung. Hãy kiểm tra API key, model và ảnh."
+            "Gemini không trả về nội dung. Hãy kiểm tra API key hoặc dữ liệu văn bản."
         )
 
     return text
@@ -582,8 +545,6 @@ QUY TẮC TRẢ LỜI:
 - Trả lời trực tiếp câu hỏi.
 - Không mâu thuẫn với dữ liệu lá số đã phân tích.
 - Nếu câu hỏi yêu cầu tính đại vận/tiểu vận/lưu niên, phải phân biệt từng tầng hạn.
-- Nếu cần dữ liệu chưa có trong bài luận giải hoặc ảnh, nói rõ thiếu dữ liệu.
-- Không tự tạo câu phú hoặc nguồn sách.
 - Khi người dùng yêu cầu giải thích, hãy chỉ rõ căn cứ: bản cung, tam hợp, xung chiếu, nhị hợp, giáp cung, Tuần/Triệt, sao và hạn liên quan.
 """
 
@@ -650,7 +611,7 @@ books_text, books_err = load_books_reference()
 # ============================================================
 
 st.markdown(
-    '<div class="main-header">☯️ TỬ VI ĐẨU SỐ LUẬN GIẢI TỰ ĐỘNG</div>',
+    '<div class="main-header">☯️ TỬ VI ĐẨU SỐ LUẬN GIẢI TỰ ĐỘNG (PYTHON OCR)</div>',
     unsafe_allow_html=True,
 )
 
@@ -700,6 +661,7 @@ with st.sidebar:
         st.session_state.current_image_bytes = None
         st.session_state.current_image_name = ""
         st.session_state.cropped_dict = {}
+        st.session_state.extracted_data = {}
         st.rerun()
 
 
@@ -717,7 +679,7 @@ col_input, col_output = st.columns([1, 1], gap="large")
 with col_input:
 
     with st.expander(
-        "📸 TẢI LÊN & CẤU HÌNH LÁ SỐ",
+        "📸 TẢI LÊN & QUÉT DỮ LIỆU LÁ SỐ",
         expanded=True,
     ):
         uploaded_file = st.file_uploader(
@@ -757,6 +719,7 @@ with col_input:
             ):
                 st.session_state.current_image_name = uploaded_file.name
                 st.session_state.current_image_bytes = raw_bytes
+                st.session_state.extracted_data = {}
 
             if save_to_github and st.session_state.get("last_uploaded") != uploaded_file.name:
                 with st.spinner("☁️ Đang lưu bản sao lên GitHub..."):
@@ -802,30 +765,31 @@ with col_input:
 
                 st.session_state.cropped_dict = cropped_dict
 
-                with st.expander("🔍 Xem mảnh cắt 12 Cung", expanded=False):
-                    crop_cols = st.columns(3)
-                    for idx, (name, crop_img) in enumerate(cropped_dict.items()):
-                        crop_cols[idx % 3].image(
-                            crop_img,
-                            caption=f"Cung {name}",
-                            use_container_width=True,
-                        )
+                # Nút thực hiện OCR độc lập bằng Python
+                if st.button("🔍 Python Tự Quét Văn Bản (OCR 12 Cung)", use_container_width=True):
+                    with st.spinner("🐍 Python đang bóc tách chữ từ 12 cung..."):
+                        extracted = extract_text_from_cungs(cropped_dict)
+                        st.session_state.extracted_data = extracted
+                        st.success("✅ Python đã bóc tách dữ liệu văn bản thành công!")
+
+        if st.session_state.extracted_data:
+            with st.expander("📄 Dữ liệu Text Python quét được từ 12 Cung", expanded=False):
+                st.json(st.session_state.extracted_data)
 
         analyze_clicked = st.button(
-            "🔮 BẮT ĐẦU LUẬN GIẢI",
+            "🔮 BẮT ĐẦU LUẬN GIẢI (GỬI DỮ LIỆU TEXT)",
             type="primary",
             use_container_width=True,
         )
 
     # --------------------------------------------------------
-    # KHUNG CHAT ĐƯỢC CHUYỂN SANG BÊN TRÁI (VÙNG MÀU XANH)
+    # KHUNG CHAT BÊN TRÁI
     # --------------------------------------------------------
     st.markdown(
         '<div class="analysis-header-title" style="margin-top: 15px;">💬 TRÒ CHUYỆN & HỎI ĐÁP VỚI AI</div>',
         unsafe_allow_html=True,
     )
 
-    # Khung chứa nội dung tin nhắn có thanh cuộn riêng
     chat_container = st.container(height=450)
 
     with chat_container:
@@ -866,8 +830,7 @@ with col_output:
         )
     else:
         st.info(
-            "Chưa có bài luận giải. "
-            "Hãy tải ảnh lá số và bấm **BẮT ĐẦU LUẬN GIẢI**."
+            "Chưa có bài luận giải. Hãy tải ảnh lá số, nhấn **Python Tự Quét Văn Bản** rồi bấm **BẮT ĐẦU LUẬN GIẢI**."
         )
 
 
@@ -885,39 +848,36 @@ if analyze_clicked:
     elif engine_err:
         st.error(f"❌ Engine lỗi: {engine_err}")
     else:
-        image = st.session_state.get("current_image")
+        # Tự động quét OCR nếu người dùng chưa bấm quét trước đó
+        if not st.session_state.extracted_data:
+            with st.spinner("🐍 Python đang bóc tách chữ từ 12 cung..."):
+                st.session_state.extracted_data = extract_text_from_cungs(
+                    st.session_state.cropped_dict
+                )
 
-        if image is None:
-            image, image_error = uploaded_file_to_image(uploaded_file)
-            if image_error:
-                st.error(image_error)
-                image = None
+        with st.spinner("🔮 Gemini đang đọc dữ liệu văn bản và thực hiện luận giải..."):
+            try:
+                result = generate_analysis(
+                    extracted_data=st.session_state.extracted_data,
+                    system_prompt=main_system_prompt,
+                    engine_data=engine_data,
+                    books_text=books_text,
+                    selected_year=selected_year,
+                    user_note=user_note,
+                )
 
-        if image is not None:
-            with st.spinner("🔮 Gemini đang đọc lá số và thực hiện luận giải..."):
-                try:
-                    result = generate_analysis(
-                        image=image,
-                        cropped_dict=st.session_state.get("cropped_dict", {}),
-                        system_prompt=main_system_prompt,
-                        engine_data=engine_data,
-                        books_text=books_text,
-                        selected_year=selected_year,
-                        user_note=user_note,
-                    )
+                st.session_state.analysis_result = result
+                st.session_state.chat_messages = []
+                st.success("✅ Đã hoàn thành bài luận giải.")
+                st.rerun()
 
-                    st.session_state.analysis_result = result
-                    st.session_state.chat_messages = []
-                    st.success("✅ Đã hoàn thành bài luận giải.")
-                    st.rerun()
-
-                except APIError as exc:
-                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                        st.error("⚠️ Hạn ngạch API đã vượt quá giới hạn (429 Resource Exhausted). Vui lòng thử lại sau vài phút.")
-                    else:
-                        st.error(f"❌ Lỗi Gemini API: {exc}")
-                except Exception as exc:
-                    st.error(f"❌ Không thể hoàn thành luận giải.\n\nChi tiết: {exc}")
+            except APIError as exc:
+                if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                    st.error("⚠️ Hạn ngạch API đã vượt quá giới hạn (429 Resource Exhausted). Vui lòng thử lại sau vài phút.")
+                else:
+                    st.error(f"❌ Lỗi Gemini API: {exc}")
+            except Exception as exc:
+                st.error(f"❌ Không thể hoàn thành luận giải.\n\nChi tiết: {exc}")
 
 
 # ============================================================
