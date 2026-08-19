@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Adapter for the TuViMCP chart/ansa engine.
+"""Adapter for the locally vendored TuViMCP chart/ansa engine.
 
-The calculation engine is provided by nmhaaa3218/TuViMCP (MIT License),
-pinned in requirements.txt. This module converts its object model into the
-clean JSON schema used by luangiaibysun, so OCR and AI remain separate from
-the deterministic chart-calculation layer.
+The TuViMCP source is vendored under ``vendor/tuvi_mcp`` at a pinned
+commit. The application never imports the external/root ``tuvi_mcp``
+package. This keeps chart calculation deterministic and self-contained.
 """
 from __future__ import annotations
 
 from typing import Any
 
-from tuvi_mcp._engine import diaBan, lapDiaBan, lapThienBan
+from vendor.tuvi_mcp._engine import diaBan, lapDiaBan, lapThienBan
 
 
 BRANCH_TO_INDEX = {
@@ -20,6 +19,7 @@ BRANCH_TO_INDEX = {
     "Mão": 4,
     "Thìn": 5,
     "Tỵ": 6,
+    "Tị": 6,
     "Ngọ": 7,
     "Mùi": 8,
     "Thân": 9,
@@ -69,7 +69,7 @@ def _star_dict(star: dict[str, Any]) -> dict[str, Any]:
 def _palace_json(cung: Any) -> dict[str, Any]:
     stars = [_star_dict(x) for x in getattr(cung, "cungSao", [])]
     main = [x for x in stars if x.get("loai") == 1]
-    phụ = [x for x in stars if x.get("loai") != 1 and not x.get("vong_trang_sinh")]
+    phu = [x for x in stars if x.get("loai") != 1 and not x.get("vong_trang_sinh")]
     trang_sinh = [x for x in stars if x.get("vong_trang_sinh")]
     return {
         "cung": getattr(cung, "cungChu", ""),
@@ -83,7 +83,7 @@ def _palace_json(cung: Any) -> dict[str, Any]:
         "dai_van": {"tuoi_bat_dau": getattr(cung, "cungDaiHan", None)},
         "tieu_van": {"chi": getattr(cung, "cungTieuHan", None)},
         "chinh_tinh": main,
-        "phu_tinh": phụ,
+        "phu_tinh": phu,
         "vong_trang_sinh": trang_sinh[0]["ten"] if trang_sinh else None,
         "sao": stars,
     }
@@ -99,20 +99,10 @@ def lap_la_so(
     duong_lich: bool = True,
     time_zone: int = 7,
 ) -> dict[str, Any]:
-    """Lập lá số bằng engine TuViMCP và trả JSON thuần.
-
-    gio_sinh: 1..12 hoặc tên địa chi giờ (Tý..Hợi).
-    gioi_tinh: Nam/Nữ hoặc 1/-1.
-    """
+    """Lập lá số bằng engine TuViMCP vendored locally và trả JSON thuần."""
     gender = _gender_value(gioi_tinh)
     hour_branch = _hour_branch(gio_sinh)
 
-    # Tạo địa bàn trước, sau đó an chính tinh/phụ tinh/đại hạn/tiểu hạn.
-    # Engine gốc nhận ngày-tháng-năm và chi giờ, rồi tự tính Can-Chi/cục.
-    lunar_month = thang
-    if duong_lich:
-        # lapDiaBan tự chuyển dương lịch -> âm lịch trước khi dựng địa bàn.
-        pass
     db = lapDiaBan(
         diaBan,
         ngay,
@@ -143,8 +133,8 @@ def lap_la_so(
         cungs[key] = row
 
     return {
-        "schema_version": "engine_1.0",
-        "source": "TuViMCP_ansaotuvi",
+        "schema_version": "engine_1.1",
+        "source": "local_vendor_TuViMCP_667c68f",
         "input": {
             "ngay": ngay,
             "thang": thang,
