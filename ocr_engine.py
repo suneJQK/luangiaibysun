@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Local OCR pipeline for Tử Vi charts.
+"""Local Python OCR for Tử Vi charts.
 
-The image is processed locally with EasyOCR. Only structured OCR text is
-returned to the LLM; the original image and cropped images are never sent to
-Gemini.
+Hard rule: Gemini receives only structured text produced here. No image bytes
+or cropped images are ever passed to the LLM.
 """
 from __future__ import annotations
 
@@ -12,9 +11,8 @@ from typing import Dict, List
 
 import numpy as np
 from PIL import Image, ImageEnhance, ImageOps
-
-import streamlit as st
 import easyocr
+import streamlit as st
 
 GRID_MAP = {
     "Hợi": (3, 3), "Tý": (2, 3), "Sửu": (1, 3), "Dần": (0, 3),
@@ -49,12 +47,10 @@ def crop_12_cung(img: Image.Image, top_cut=0, bottom_cut=3, side_cut=0, overlap_
 
 
 def _preprocess(image: Image.Image) -> np.ndarray:
-    image = image.convert("RGB")
-    image = ImageOps.grayscale(image)
+    image = ImageOps.grayscale(image.convert("RGB"))
     image = ImageEnhance.Contrast(image).enhance(1.35)
     image = ImageEnhance.Sharpness(image).enhance(1.25)
-    image = ImageOps.autocontrast(image)
-    return np.asarray(image)
+    return np.asarray(ImageOps.autocontrast(image))
 
 
 def _normalize_text(text: str) -> str:
@@ -63,41 +59,37 @@ def _normalize_text(text: str) -> str:
     return text.strip()
 
 
-def extract_text_from_cungs(cropped: Dict[str, Image.Image]) -> Dict[str, List[str]]:
+def _read(image: Image.Image) -> List[str]:
     reader = load_ocr_reader()
-    extracted: Dict[str, List[str]] = {}
-    for cung, image in cropped.items():
-        arr = _preprocess(image)
-        results = reader.readtext(
-            arr,
-            detail=1,
-            paragraph=False,
-            decoder="greedy",
-            text_threshold=0.55,
-            low_text=0.25,
-            link_threshold=0.25,
-            mag_ratio=1.5,
-        )
-        rows = []
-        for item in results:
-            if len(item) >= 3:
-                text = _normalize_text(str(item[1]))
-                try:
-                    confidence = float(item[2])
-                except Exception:
-                    confidence = 0.0
-                if text and confidence >= 0.20:
-                    rows.append((text, round(confidence, 3)))
-        rows.sort(key=lambda x: x[0])
-        extracted[cung] = [f"{text} [conf={confidence}]" for text, confidence in rows]
-    return extracted
+    rows = []
+    for item in reader.readtext(
+        _preprocess(image), detail=1, paragraph=False, decoder="greedy",
+        text_threshold=0.55, low_text=0.25, link_threshold=0.25, mag_ratio=1.5,
+    ):
+        if len(item) < 3:
+            continue
+        text = _normalize_text(str(item[1]))
+        try:
+            confidence = float(item[2])
+        except Exception:
+            confidence = 0.0
+        if text and confidence >= 0.20:
+            rows.append((text, round(confidence, 3)))
+    return [f"{text} [conf={confidence}]" for text, confidence in rows]
 
 
-def build_processed_dataset(extracted: Dict[str, List[str]]) -> Dict[str, object]:
-    """Create the only image-derived payload allowed to reach the LLM."""
+def extract_text_from_cungs(cropped: Dict[str, Image.Image]) -> Dict[str, List[str]]:
+    return {cung: _read(image) for cung, image in cropped.items()}
+
+
+def extract_chart_text(image: Image.Image, cropped: Dict[str, Image.Image]) -> Dict[str, object]:
+    """OCR locally and return a JSON-safe dataset; no image is retained."""
+    header = _read(image)
+    cungs = extract_text_from_cungs(cropped)
     return {
         "source": "python_easyocr",
         "image_sent_to_llm": False,
-        "cung_count": len(extracted),
-        "cungs": extracted,
+        "header_text": header,
+        "cung_count": len(cungs),
+        "cungs": cungs,
     }
