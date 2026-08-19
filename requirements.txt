@@ -3,3 +3,6 @@ google-genai
 pillow
 pypdf
 PyGithub
+easyocr
+numpy<2.0.0
+opencv-python-headless
