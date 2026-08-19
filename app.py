@@ -13,7 +13,6 @@ from PIL import Image
 from github import Github, GithubException
 from google import genai
 from google.genai import types
-from google.genai.errors import APIError
 
 
 # ============================================================
@@ -89,31 +88,6 @@ st.markdown(
         font-size: 1rem;
         line-height: 1.6;
     }
-
-    /* Khung cuộn độc lập cho kết quả luận giải */
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor) {
-        max-height: 75vh;
-        overflow-y: auto;
-        padding: 15px;
-        border: 1px solid #30363d;
-        border-radius: 10px;
-        background-color: #161b22;
-    }
-
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar {
-        width: 8px;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-track {
-        background: #0d1117;
-        border-radius: 8px;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-thumb {
-        background: #30363d;
-        border-radius: 8px;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-thumb:hover {
-        background: #d4af37;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -178,7 +152,10 @@ def get_gemini_client(api_key: str):
 
 @st.cache_data(ttl=3600)
 def load_system_prompt():
-    """Đọc TẤT CẢ .txt trong system_prompts theo thứ tự tên file."""
+    """
+    Đọc TẤT CẢ .txt trong system_prompts theo thứ tự tên file.
+    Bản cũ chỉ đọc txt_files[0], khiến các chương còn lại bị bỏ qua.
+    """
     if not PROMPT_DIR.exists():
         return (
             "Bạn là chuyên gia Tử Vi Đẩu Số cao cấp.",
@@ -364,13 +341,27 @@ def crop_12_cung_overlap(
     cropped_cungs = {}
 
     for cung_name, (col, row) in GRID_MAP.items():
-        left = max(0, int(left_start + col * w_step - overlap_px))
-        top = max(0, int(top_start + row * h_step - overlap_px))
-        right = min(width, int(left_start + (col + 1) * w_step + overlap_px))
-        bottom = min(height, int(top_start + (row + 1) * h_step + overlap_px))
+        left = max(
+            0,
+            int(left_start + col * w_step - overlap_px),
+        )
+        top = max(
+            0,
+            int(top_start + row * h_step - overlap_px),
+        )
+        right = min(
+            width,
+            int(left_start + (col + 1) * w_step + overlap_px),
+        )
+        bottom = min(
+            height,
+            int(top_start + (row + 1) * h_step + overlap_px),
+        )
 
         if right > left and bottom > top:
-            cropped_cungs[cung_name] = img.crop((left, top, right, bottom))
+            cropped_cungs[cung_name] = img.crop(
+                (left, top, right, bottom)
+            )
 
     return cropped_cungs
 
@@ -526,7 +517,6 @@ Hãy ưu tiên tính nhất quán và kiểm tra chéo hơn là viết dài.
 
 def generate_analysis(
     image: Image.Image,
-    cropped_dict: dict,
     system_prompt,
     engine_data,
     books_text,
@@ -553,16 +543,8 @@ def generate_analysis(
         ),
     ]
 
-    # Gửi kèm 12 mảnh cắt giúp AI nhận diện chi tiết chữ nhỏ/mờ
-    if cropped_dict:
-        contents.append(types.Part.from_text(text="\n\nCHI TIẾT MẢNH CẮT 12 CUNG:\n"))
-        for name, crop_img in cropped_dict.items():
-            contents.append(types.Part.from_text(text=f"Mảnh cắt Cung {name}:"))
-            crop_bytes = image_to_bytes(crop_img, "PNG")
-            contents.append(types.Part.from_bytes(data=crop_bytes, mime_type="image/png"))
-
     response = client.models.generate_content(
-        model="gemini-3.6-flash",  # Sử dụng model gemini-3.6-flash
+        model="gemini-2.5-flash",
         contents=contents,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -593,18 +575,22 @@ def build_chat_instruction(
     engine_text = compact_json(engine_data, 80000)
     analysis_text = compact_text(analysis_context, 100000)
 
-    return f"""{main_system_prompt}
+    return f"""
+{main_system_prompt}
 
 Bạn đang tiếp tục hội thoại về chính lá số đã được phân tích.
 
-NĂM ĐANG XÉT:{selected_year}
+NĂM ĐANG XÉT:
+{selected_year}
 
 BÀI LUẬN GIẢI GỐC:
---- START ANALYSIS ---{analysis_text}
+--- START ANALYSIS ---
+{analysis_text}
 --- END ANALYSIS ---
 
 BỘ QUY TẮC CỐT LÕI:
---- START ENGINE ---{engine_text}
+--- START ENGINE ---
+{engine_text}
 --- END ENGINE ---
 
 QUY TẮC TRẢ LỜI:
@@ -617,7 +603,7 @@ QUY TẮC TRẢ LỜI:
 """
 
 
-def ask_chat(question, selected_year, main_system_prompt, engine_data):
+def ask_chat(question, selected_year):
     client = get_gemini_client(API_KEY)
 
     analysis_context = st.session_state.get(
@@ -642,15 +628,18 @@ def ask_chat(question, selected_year, main_system_prompt, engine_data):
 
     conversation = "\n\n".join(history_parts)
 
-    full_prompt = f"""{instruction}
+    full_prompt = f"""
+{instruction}
 
-LỊCH SỬ HỘI THOẠI:{conversation}
+LỊCH SỬ HỘI THOẠI:
+{conversation}
 
-CÂU HỎI MỚI:{question}
+CÂU HỎI MỚI:
+{question}
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",  # Sử dụng model gemini-3.6-flash
+        model="gemini-2.5-flash",
         contents=full_prompt,
         config=types.GenerateContentConfig(
             temperature=0.25,
@@ -733,7 +722,6 @@ with st.sidebar:
         st.session_state.chat_messages = []
         st.session_state.current_image_bytes = None
         st.session_state.current_image_name = ""
-        st.session_state.cropped_dict = {}
         st.rerun()
 
 
@@ -783,6 +771,8 @@ with col_input:
         overlap_val = 15
 
         if uploaded_file:
+            # Lưu bytes vào session để nút phân tích không phụ thuộc
+            # object UploadedFile sau các lần rerun.
             raw_bytes = uploaded_file.getvalue()
 
             if (
@@ -915,7 +905,6 @@ if analyze_clicked:
                 try:
                     result = generate_analysis(
                         image=image,
-                        cropped_dict=st.session_state.get("cropped_dict", {}),
                         system_prompt=main_system_prompt,
                         engine_data=engine_data,
                         books_text=books_text,
@@ -931,11 +920,6 @@ if analyze_clicked:
                     st.success("✅ Đã hoàn thành bài luận giải.")
                     st.rerun()
 
-                except APIError as exc:
-                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                        st.error("⚠️ Hạn ngạch API đã vượt quá giới hạn (429 Resource Exhausted). Vui lòng thử lại sau vài phút hoặc kiểm tra lại API key.")
-                    else:
-                        st.error(f"❌ Lỗi Gemini API: {exc}")
                 except Exception as exc:
                     st.error(
                         "❌ Không thể hoàn thành luận giải.\n\n"
@@ -957,13 +941,12 @@ with col_output:
     analysis_result = st.session_state.get("analysis_result", "")
 
     if analysis_result:
-        analysis_container = st.container()
-        with analysis_container:
-            st.markdown('<div class="scrollable-anchor"></div>', unsafe_allow_html=True)
-            st.markdown(
-                f'<div class="scrollable-result-content">{analysis_result}</div>',
-                unsafe_allow_html=True,
-            )
+        st.markdown(
+            '<div class="scrollable-result-content">',
+            unsafe_allow_html=True,
+        )
+        st.markdown(analysis_result)
+        st.markdown("</div>", unsafe_allow_html=True)
 
         st.download_button(
             "⬇️ Tải bài luận giải (.txt)",
@@ -994,6 +977,7 @@ for msg in st.session_state.chat_messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+
 user_question = st.chat_input(
     "Nhập câu hỏi về lá số (Ví dụ: Hạn năm 2026 cần lưu ý gì?)..."
 )
@@ -1018,8 +1002,6 @@ if user_question:
                     answer = ask_chat(
                         question=user_question,
                         selected_year=selected_year,
-                        main_system_prompt=main_system_prompt,
-                        engine_data=engine_data,
                     )
 
                     st.markdown(answer)
@@ -1031,18 +1013,6 @@ if user_question:
                         }
                     )
 
-                except APIError as exc:
-                    if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                        error_message = "⚠️ Hạn ngạch gọi API đã hết (429 Resource Exhausted). Hãy đợi ít phút rồi gửi lại câu hỏi."
-                    else:
-                        error_message = f"❌ Lỗi Gemini API: {exc}"
-                    st.error(error_message)
-                    st.session_state.chat_messages.append(
-                        {
-                            "role": "assistant",
-                            "content": error_message,
-                        }
-                    )
                 except Exception as exc:
                     error_message = f"❌ Lỗi khi hỏi Gemini: {exc}"
                     st.error(error_message)
