@@ -19,7 +19,7 @@ from google.genai.errors import APIError
 
 
 # ============================================================
-# TẢI MODEL OCR (CASHED)
+# TẢI MODEL OCR (CACHED)
 # ============================================================
 
 @st.cache_resource
@@ -111,16 +111,20 @@ st.markdown(
 
 
 # ============================================================
-# SECRETS / ĐƯỜNG DẪN
+# SECRETS / ĐƯỜNG DẪN (ĐÃ CẬP NHẬT AN TOÀN)
 # ============================================================
 
 def get_secret(name: str, default: str = "") -> str:
-    """Đọc secret từ Streamlit Secrets trước, sau đó mới đến biến môi trường."""
+    """
+    Đọc secret an toàn, không bị bẫy lỗi StreamlitSecretNotFoundError 
+    khi chạy ở môi trường Codespaces / Local chưa tạo secrets.toml.
+    """
     try:
-        value = st.secrets.get(name)
+        if name in st.secrets:
+            return str(st.secrets[name])
     except Exception:
-        value = None
-    return str(value or os.environ.get(name, default) or "")
+        pass
+    return str(os.environ.get(name, default) or "")
 
 
 API_KEY = get_secret("GEMINI_API_KEY")
@@ -494,7 +498,6 @@ def generate_analysis(
         user_note=user_note,
     )
 
-    # Gửi hoàn toàn bằng Text Prompt sang Gemini
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=prompt,
@@ -765,7 +768,6 @@ with col_input:
 
                 st.session_state.cropped_dict = cropped_dict
 
-                # Nút thực hiện OCR độc lập bằng Python
                 if st.button("🔍 Python Tự Quét Văn Bản (OCR 12 Cung)", use_container_width=True):
                     with st.spinner("🐍 Python đang bóc tách chữ từ 12 cung..."):
                         extracted = extract_text_from_cungs(cropped_dict)
@@ -848,7 +850,6 @@ if analyze_clicked:
     elif engine_err:
         st.error(f"❌ Engine lỗi: {engine_err}")
     else:
-        # Tự động quét OCR nếu người dùng chưa bấm quét trước đó
         if not st.session_state.extracted_data:
             with st.spinner("🐍 Python đang bóc tách chữ từ 12 cung..."):
                 st.session_state.extracted_data = extract_text_from_cungs(
