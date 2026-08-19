@@ -78,15 +78,24 @@ if uploaded:
     image=Image.open(uploaded).convert("RGB")
     with st.expander("Xem ảnh gốc"):st.image(image,use_container_width=True)
     if st.button("🔎 QUÉT HÌNH ẢNH",type="primary",use_container_width=True):
-        with st.spinner("Python đang đọc vị trí, sao và các hạn trong 12 cung..."):
-            raw=extract_chart_text(image,crop_12_cung(image,top,bottom,side,overlap))
-            normalized=normalize_processed_data(raw)
-            chart=build_chart_json(normalized)
-            st.session_state.normalized=normalized
-            st.session_state.chart_json=chart
-            st.session_state.validation=validate_chart(normalized)
-            st.session_state.confirmed=False
-        st.success("Đã quét và chuẩn hóa dữ liệu. Ảnh không được gửi cho AI.")
+        try:
+            with st.spinner("Python đang đọc vị trí, sao và các hạn trong 12 cung..."):
+                cropped=crop_12_cung(image,top,bottom,side,overlap)
+                raw=extract_chart_text(image,cropped)
+                normalized=normalize_processed_data(raw)
+                chart=build_chart_json(normalized)
+                if not isinstance(chart,dict) or not isinstance(chart.get("12_cung"),dict):
+                    raise ValueError("Bộ chuẩn hóa OCR không tạo được bảng 12 cung hợp lệ.")
+                st.session_state.normalized=normalized
+                st.session_state.chart_json=chart
+                st.session_state.validation=validate_chart(normalized)
+                st.session_state.confirmed=False
+            st.success("Đã quét và chuẩn hóa dữ liệu. Ảnh không được gửi cho AI.")
+        except Exception as exc:
+            st.session_state.chart_json=None
+            st.session_state.normalized=None
+            st.error(f"Không thể hoàn tất bước quét/chuẩn hóa OCR: {type(exc).__name__}: {exc}")
+            st.info("Bản sửa mới đã thêm lớp bảo vệ để lỗi parser không làm treo toàn bộ ứng dụng. Hãy chờ Streamlit Cloud deploy commit mới rồi quét lại.")
 
 if st.session_state.chart_json:
     st.header("② Bảng 12 cung sạch")
@@ -104,8 +113,7 @@ if st.session_state.chart_json:
     if rows:st.dataframe(rows,use_container_width=True,hide_index=True)
     with st.expander("Xem JSON sạch gửi cho AI"):st.json(chart)
     if st.session_state.normalized and st.session_state.normalized.get("review"):
-        with st.expander("🔍 OCR cần kiểm tra (không gửi AI)"):
-            st.dataframe(st.session_state.normalized["review"],use_container_width=True,hide_index=True)
+        with st.expander("🔍 OCR cần kiểm tra (không gửi AI)"):st.dataframe(st.session_state.normalized["review"],use_container_width=True,hide_index=True)
     v=st.session_state.validation or {"errors":[],"warnings":[]}
     if v.get("errors"):st.error("; ".join(v["errors"][:5]))
     if v.get("warnings"):st.warning(f"Có {len(v['warnings'])} cảnh báo cần kiểm tra.")
