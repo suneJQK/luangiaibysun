@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """Local Python OCR for Tử Vi charts.
 
-Hard rule: Gemini receives only structured text produced here. No image bytes
-or cropped images are ever passed to the LLM.
+Performance-safe pipeline: one cached EasyOCR reader, resized crops, and no
+OCR pass over the full original image. Gemini never receives image data.
 """
 from __future__ import annotations
 
@@ -20,9 +20,22 @@ GRID_MAP = {
     "Mùi": (2, 0), "Thân": (3, 0), "Dậu": (3, 1), "Tuất": (3, 2),
 }
 
-@st.cache_resource(show_spinner="Đang tải mô hình OCR Python...")
+MAX_SIDE = 1600
+
+
+@st.cache_resource(show_spinner="Đang tải mô hình OCR Python lần đầu...")
 def load_ocr_reader():
-    return easyocr.Reader(["vi", "en"], gpu=False, verbose=False)
+    # Model is loaded exactly once per Streamlit process.
+    return easyocr.Reader(["vi", "en"], gpu=False, verbose=False, model_storage_directory=".easyocr")
+
+
+def _resize(image: Image.Image) -> Image.Image:
+    image = image.convert("RGB")
+    w, h = image.size
+    scale = min(1.0, MAX_SIDE / max(w, h))
+    if scale < 1.0:
+        image = image.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.Resampling.LANCZOS)
+    return image
 
 
 def crop_12_cung(img: Image.Image, top_cut=0, bottom_cut=3, side_cut=0, overlap_px=15):
@@ -42,14 +55,15 @@ def crop_12_cung(img: Image.Image, top_cut=0, bottom_cut=3, side_cut=0, overlap_
         right = min(width, int(left_start + (col + 1) * w_step + overlap_px))
         bottom = min(height, int(top_start + (row + 1) * h_step + overlap_px))
         if right > left and bottom > top:
-            result[name] = img.crop((left, top, right, bottom))
+            result[name] = _resize(img.crop((left, top, right, bottom)))
     return result
 
 
 def _preprocess(image: Image.Image) -> np.ndarray:
-    image = ImageOps.grayscale(image.convert("RGB"))
-    image = ImageEnhance.Contrast(image).enhance(1.35)
-    image = ImageEnhance.Sharpness(image).enhance(1.25)
+    image = _resize(image)
+    image = ImageOps.grayscale(image)
+    image = ImageEnhance.Contrast(image).enhance(1.25)
+    image = ImageEnhance.Sharpness(image).enhance(1.15)
     return np.asarray(ImageOps.autocontrast(image))
 
 
@@ -63,8 +77,15 @@ def _read(image: Image.Image) -> List[str]:
     reader = load_ocr_reader()
     rows = []
     for item in reader.readtext(
-        _preprocess(image), detail=1, paragraph=False, decoder="greedy",
-        text_threshold=0.55, low_text=0.25, link_threshold=0.25, mag_ratio=1.5,
+        _preprocess(image),
+        detail=1,
+        paragraph=False,
+        decoder="greedy",
+        text_threshold=0.60,
+        low_text=0.30,
+        link_threshold=0.30,
+        mag_ratio=1.0,
+        batch_size=1,
     ):
         if len(item) < 3:
             continue
@@ -73,23 +94,31 @@ def _read(image: Image.Image) -> List[str]:
             confidence = float(item[2])
         except Exception:
             confidence = 0.0
-        if text and confidence >= 0.20:
+        if text and confidence >= 0.25:
             rows.append((text, round(confidence, 3)))
     return [f"{text} [conf={confidence}]" for text, confidence in rows]
 
 
 def extract_text_from_cungs(cropped: Dict[str, Image.Image]) -> Dict[str, List[str]]:
-    return {cung: _read(image) for cung, image in cropped.items()}
+    """OCR only the 12 cropped cells; never OCR the full source image."""
+    reader = load_ocr_reader()
+    out: Dict[str, List[str]] = {}
+    progress = st.progress(0, text="Đang OCR 12 cung...")
+    total = max(1, len(cropped))
+    for index, (cung, image) in enumerate(cropped.items(), start=1):
+        out[cung] = _read(image)
+        progress.progress(index / total, text=f"OCR {index}/{total}: {cung}")
+    progress.empty()
+    return out
 
 
 def extract_chart_text(image: Image.Image, cropped: Dict[str, Image.Image]) -> Dict[str, object]:
-    """OCR locally and return a JSON-safe dataset; no image is retained."""
-    header = _read(image)
+    """Return only JSON-safe OCR data. The original image is discarded."""
     cungs = extract_text_from_cungs(cropped)
     return {
         "source": "python_easyocr",
         "image_sent_to_llm": False,
-        "header_text": header,
+        "header_text": [],
         "cung_count": len(cungs),
         "cungs": cungs,
     }
