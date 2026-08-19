@@ -1,0 +1,3 @@
+# Vendored from nmhaaa3218/TuViMCP at commit 667c68f564e135cae207df3471273f639fa2feb4.
+Source: https://github.com/nmhaaa3218/TuViMCP
+License: MIT
