@@ -6,3 +6,5 @@ PyGithub
 easyocr
 numpy<2.0.0
 opencv-python-headless
+# Deterministic Tử Vi chart/ansa engine from TuViMCP, pinned for reproducibility.
+tuvi-mcp-server @ git+https://github.com/nmhaaa3218/TuViMCP.git@667c68f564e135cae207df3471273f639fa2feb4
