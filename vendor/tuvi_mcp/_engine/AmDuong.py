@@ -432,7 +432,8 @@ def nguHanhNapAm(diaChi, thienCan, xuatBanMenh=False):
         "K5": "KIẾM PHONG KIM",
         "H6": "SƠN ÐẦU HỎA",
         "O6": "ỐC THƯỢNG THỔ",
-        "M6": "XOA XUYẾN KIM",
+        "M6": "BÌNH ÐỊA MỘC",
+        "K6": "XOA XUYẾN KIM",
         "T6": "ÐẠI HẢI THỦY"}
     matranNapAm = [
         [0, "G", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "N", "Q"],
@@ -616,13 +617,16 @@ def timThienMa(chiNam):
 
 
 def timPhaToai(chiNam):
-    if chiNam in (1, 4, 7, 10):
+    demNghich = chiNam % 3
+    if demNghich == 0:
         return 6
-    elif chiNam in (3, 6, 9, 12):
+    elif demNghich == 1:
         return 10
-    elif chiNam in (2, 5, 8, 11):
+    elif demNghich == 2:
         return 2
-    raise Exception("Không tìm được vị trí Phá Toái")
+    else:
+        raise Exception("Không tìm được Phá toái")
+
 
 def timTriet(canNam):
     # Giáp Kỷ, Thân Dậu cung
