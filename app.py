@@ -94,14 +94,8 @@ YÊU CẦU:
 - Trả lời trực tiếp câu hỏi, có căn cứ từ lá số và giải thích dễ hiểu.
 """
     system = system_prompt + "\n\nBẮT BUỘC: TuViMCP LOCAL/Python là nguồn dữ liệu lập lá số. AI chỉ diễn giải và tuyệt đối không được thay đổi dữ liệu đầu vào."
-    cfg = types.GenerateContentConfig(
-        system_instruction=system,
-        temperature=0.2,
-        max_output_tokens=30000,
-    )
-    return get_client(API_KEY).models.generate_content(
-        model="gemini-3.6-flash", contents=prompt, config=cfg
-    ).text
+    cfg = types.GenerateContentConfig(system_instruction=system, temperature=0.2, max_output_tokens=30000)
+    return get_client(API_KEY).models.generate_content(model="gemini-3.6-flash", contents=prompt, config=cfg).text
 
 
 for key, default in [("chart_json", None), ("chat_history", [])]:
@@ -109,7 +103,6 @@ for key, default in [("chart_json", None), ("chat_history", [])]:
 
 st.title("☯️ TỬ VI ĐẨU SỐ")
 st.caption("Lập lá số bằng TuViMCP LOCAL → dữ liệu chuẩn → AI luận giải")
-
 st.header("① Lập lá số")
 st.info("TuViMCP được tích hợp trực tiếp trong repository, không gọi engine từ repository gốc.")
 
@@ -117,21 +110,12 @@ with st.form("lap_la_so_form"):
     c1, c2, c3 = st.columns(3)
     with c1:
         lich = st.radio("Loại lịch", ["Dương lịch", "Âm lịch"], horizontal=True)
-        ngay_sinh = st.date_input(
-            "Ngày sinh", value=date(1996, 1, 1),
-            min_value=date(1900, 1, 1), max_value=date(2100, 12, 31),
-            format="DD/MM/YYYY",
-        )
+        ngay_sinh = st.date_input("Ngày sinh", value=date(1996, 1, 1), min_value=date(1900, 1, 1), max_value=date(2100, 12, 31), format="DD/MM/YYYY")
     with c2:
         gioi_tinh = st.radio("Giới tính", ["Nam", "Nữ"], horizontal=True)
         ten = st.text_input("Họ tên", "")
     with c3:
-        hour_labels = [
-            "Tý (23:00–00:59)", "Sửu (01:00–02:59)", "Dần (03:00–04:59)",
-            "Mão (05:00–06:59)", "Thìn (07:00–08:59)", "Tỵ (09:00–10:59)",
-            "Ngọ (11:00–12:59)", "Mùi (13:00–14:59)", "Thân (15:00–16:59)",
-            "Dậu (17:00–18:59)", "Tuất (19:00–20:59)", "Hợi (21:00–22:59)",
-        ]
+        hour_labels = ["Tý (23:00–00:59)", "Sửu (01:00–02:59)", "Dần (03:00–04:59)", "Mão (05:00–06:59)", "Thìn (07:00–08:59)", "Tỵ (09:00–10:59)", "Ngọ (11:00–12:59)", "Mùi (13:00–14:59)", "Thân (15:00–16:59)", "Dậu (17:00–18:59)", "Tuất (19:00–20:59)", "Hợi (21:00–22:59)"]
         gio_label = st.selectbox("Giờ sinh — chọn trực tiếp", hour_labels, index=6)
         mui_gio = st.number_input("Múi giờ", min_value=-12, max_value=14, value=7, step=1)
     st.caption("Chọn trực tiếp thời thần. Tý bắt đầu từ 23:00.")
@@ -140,16 +124,7 @@ with st.form("lap_la_so_form"):
 if lap:
     try:
         branch = gio_label.split(" ", 1)[0]
-        chart = lap_la_so(
-            ngay=ngay_sinh.day,
-            thang=ngay_sinh.month,
-            nam=ngay_sinh.year,
-            gio_sinh=branch,
-            gioi_tinh=gioi_tinh,
-            ten=ten,
-            duong_lich=(lich == "Dương lịch"),
-            time_zone=int(mui_gio),
-        )
+        chart = lap_la_so(ngay=ngay_sinh.day, thang=ngay_sinh.month, nam=ngay_sinh.year, gio_sinh=branch, gioi_tinh=gioi_tinh, ten=ten, duong_lich=(lich == "Dương lịch"), time_zone=int(mui_gio))
         if not isinstance(chart, dict) or len(chart.get("12_cung", {})) != 12:
             raise ValueError("Engine không tạo đủ 12 cung.")
         chart.setdefault("input", {})["gio_hien_thi"] = gio_label
@@ -163,8 +138,6 @@ if lap:
 if st.session_state.chart_json:
     chart = st.session_state.chart_json
     tb = chart.get("thien_ban", {})
-
-    # Không hiển thị bàn lá số 4x4. Chỉ hiển thị dữ liệu gọn để kiểm tra.
     st.header("② Dữ liệu lập lá số")
     m = st.columns(5)
     m[0].metric("Nguồn", "LOCAL")
@@ -178,17 +151,44 @@ if st.session_state.chart_json:
         st.json(tb)
     with tabs[1]:
         rows = []
+        MAIN_STAR_IDS = set(range(1, 15))
         for name, data in chart.get("12_cung", {}).items():
             if not isinstance(data, dict):
                 continue
             flags = [x for x, ok in (("Tuần", data.get("tuan")), ("Triệt", data.get("triet"))) if ok]
             main = data.get("chinh_tinh") or []
             phu = data.get("phu_tinh") or []
+            main_ids = {x.get("id") for x in main if isinstance(x, dict) and x.get("id") is not None}
+            main_names = {str(x.get("ten", "")).strip().casefold() for x in main if isinstance(x, dict) and x.get("ten")}
+            filtered_phu = []
+            seen = set()
+            for x in phu:
+                if isinstance(x, dict):
+                    sid = x.get("id")
+                    sname = str(x.get("ten", "")).strip()
+                    if sid in MAIN_STAR_IDS or sid in main_ids or (sname and sname.casefold() in main_names):
+                        continue
+                    key = sid if sid is not None else sname.casefold()
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    filtered_phu.append(x)
+                else:
+                    sname = str(x).strip()
+                    if sname and sname.casefold() in main_names:
+                        continue
+                    if sname and sname.casefold() in seen:
+                        continue
+                    if sname:
+                        seen.add(sname.casefold())
+                    filtered_phu.append(x)
+
             def names(items):
                 result = []
                 for x in items:
                     result.append(x.get("ten", "") if isinstance(x, dict) else str(x))
                 return "; ".join(x for x in result if x) or "—"
+
             rows.append({
                 "Cung": name + (" (Thân cư)" if data.get("than_cu") else ""),
                 "Can-Chi": data.get("can_chi") or "—",
@@ -196,7 +196,7 @@ if st.session_state.chart_json:
                 "Tràng sinh": data.get("vong_trang_sinh") or "—",
                 "Tuần/Triệt": ", ".join(flags) or "—",
                 "Chính tinh": names(main),
-                "Phụ tinh": names(phu),
+                "Phụ tinh": names(filtered_phu),
             })
         st.dataframe(rows, use_container_width=True, hide_index=True)
     with tabs[2]:
@@ -204,21 +204,12 @@ if st.session_state.chart_json:
     with tabs[3]:
         st.json(chart)
 
-    st.download_button(
-        "⬇️ Tải JSON lá số",
-        data=json.dumps(chart, ensure_ascii=False, indent=2),
-        file_name="la_so_tu_vi.json",
-        mime="application/json",
-        use_container_width=True,
-    )
-
+    st.download_button("⬇️ Tải JSON lá số", data=json.dumps(chart, ensure_ascii=False, indent=2), file_name="la_so_tu_vi.json", mime="application/json", use_container_width=True)
     st.header("③ Chat với AI")
     st.caption("AI chỉ nhận dữ liệu lập lá số từ TuViMCP LOCAL và dữ liệu Python; không nhận ảnh/OCR.")
-
     for message in st.session_state.chat_history:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
     question = st.chat_input("Nhập câu hỏi về lá số…")
     if question:
         st.session_state.chat_history.append({"role": "user", "content": question})
