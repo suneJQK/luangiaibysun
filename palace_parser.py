@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Position-aware parser for one Tử Vi palace."""
+"""Position-aware parser for one Tử Vi palace.
+
+Expand chart abbreviations such as K.Hợi -> Kỷ Hợi and B.Thân -> Bính Thân.
+The full can-chi is preserved for the clean AI payload.
+"""
 from __future__ import annotations
 import re
 from typing import Any, Dict, Iterable
@@ -15,6 +19,9 @@ def norm(s:str)->str:
     s=unicodedata.normalize("NFD",str(s)); s="".join(c for c in s if unicodedata.category(c)!="Mn")
     return re.sub(r"[^a-z0-9]+","",s.lower())
 
+_CAN_KEYS={norm(k):v for k,v in CAN_MAP.items()}
+_BRANCH_KEYS={norm(x):x for x in BRANCHES}
+
 def bbox_center(item:Dict[str,Any]):
     b=item.get("bbox") or []
     if len(b)<4:return .5,.5
@@ -23,17 +30,21 @@ def bbox_center(item:Dict[str,Any]):
         return (min(xs)+max(xs))/2,(min(ys)+max(ys))/2
     except Exception:return .5,.5
 
+def parse_can_token(text:str): return _CAN_KEYS.get(norm(text))
+def parse_branch_token(text:str): return _BRANCH_KEYS.get(norm(text))
+
 def can_chi(text:str):
-    s=str(text).strip(); ns=norm(s)
+    """Parse B.Thân -> Bính Thân and K.Hợi -> Kỷ Hợi."""
+    ns=norm(text)
     for branch in sorted(BRANCHES,key=len,reverse=True):
         nb=norm(branch); pos=ns.find(nb)
-        if pos>=0:
-            prefix=ns[:pos]
-            can=CAN_MAP.get(prefix.upper())
-            if can is None:
-                for k,v in CAN_MAP.items():
-                    if prefix.upper().startswith(k): can=v; break
-            return can,branch
+        if pos<0: continue
+        prefix=ns[:pos]
+        can=_CAN_KEYS.get(prefix)
+        if can is None:
+            for k,v in sorted(_CAN_KEYS.items(),key=lambda kv:len(kv[0]),reverse=True):
+                if prefix.startswith(k): can=v; break
+        if can:return can,branch
     return None,None
 
 def parse_element(text:str):
@@ -43,19 +54,14 @@ def parse_element(text:str):
 
 def parse_period(text:str):
     s=str(text).strip(); n=norm(s)
-    # Check month/day labels before generic numbers: Th.2 is not a đại vận age.
     m=re.search(r"(?:Th|Thang)\.?\s*(\d{1,2})\b",s,re.I)
     if m:return {"kind":"luu_nguyet","thang":int(m.group(1))}
     if re.match(r"(?:luu\s*)?nhat",s,re.I):
         m2=re.search(r"(\d{1,2})",s); return {"kind":"luu_nhat","ngay":int(m2.group(1)) if m2 else None}
-    if n.startswith("dv"):
-        return {"kind":"dai_van","cung":re.sub(r"^dv[.]?","",s,flags=re.I).strip(" .")}
-    if n.startswith("ln"):
-        return {"kind":"luu_nien","cung":re.sub(r"^ln[.]?","",s,flags=re.I).strip(" .")}
-    if n.startswith("tv") or n.startswith("tieuhan") or n.startswith("tieu han"):
-        return {"kind":"tieu_van","cung":re.sub(r"^(?:tv|tieu\s*han)[.]?","",s,flags=re.I).strip(" .")}
-    age=re.fullmatch(r"\d{1,3}",s)
-    if age:return {"kind":"age","value":int(s)}
+    if n.startswith("dv"): return {"kind":"dai_van","cung":re.sub(r"^dv[.]?","",s,flags=re.I).strip(" .")}
+    if n.startswith("ln"): return {"kind":"luu_nien","cung":re.sub(r"^ln[.]?","",s,flags=re.I).strip(" .")}
+    if n.startswith("tv") or n.startswith("tieuhan"): return {"kind":"tieu_van","cung":re.sub(r"^(?:tv|tieu\s*han)[.]?","",s,flags=re.I).strip(" .")}
+    if re.fullmatch(r"\d{1,3}",s): return {"kind":"age","value":int(s)}
     return None
 
 def classify_position(item:Dict[str,Any]):
@@ -64,26 +70,31 @@ def classify_position(item:Dict[str,Any]):
     if "tuan" in low:return "tuan"
     if "triet" in low:return "triet"
     if any(norm(x)==low for x in LIFE_STAGES):return "life_stage"
-    if y<.20 and x<.34 and can_chi(text)[1]:return "can_chi"
-    if y<.30 and x<.34 and parse_element(text)[0]:return "element"
-    if y<.22 and x>.68 and re.fullmatch(r"\d{1,3}",text):return "dai_van_age"
-    if y<.30 and x>.68 and parse_period(text):return "period"
-    if y>.78 and x<.36 and low.startswith("dv"):return "dai_van_cung"
-    if y>.78 and x>.64 and low.startswith("ln"):return "luu_nien_cung"
-    if y>.78 and .30<=x<=.70 and (low.startswith("tv") or "tieuhan" in low or "tieuhan" in low):return "tieu_van_cung"
-    if "th" in low and re.fullmatch(r"th\d{1,2}",low):return "luu_nguyet"
+    if y<.24 and x<.40 and can_chi(text)[1]:return "can_chi"
+    if y<.24 and x<.40 and parse_can_token(text):return "can"
+    if y<.24 and x<.40 and parse_branch_token(text):return "dia_chi"
+    if y<.34 and x<.40 and parse_element(text)[0]:return "element"
+    if y<.24 and x>.64 and re.fullmatch(r"\d{1,3}",text):return "dai_van_age"
+    if y<.32 and x>.64 and parse_period(text):return "period"
+    if y>.76 and x<.38 and low.startswith("dv"):return "dai_van_cung"
+    if y>.76 and x>.62 and low.startswith("ln"):return "luu_nien_cung"
+    if y>.76 and .28<=x<=.72 and (low.startswith("tv") or "tieuhan" in low):return "tieu_van_cung"
+    if re.fullmatch(r"th\d{1,2}",low):return "luu_nguyet"
     return "star"
 
-def parse_palace_items(items:Iterable[Dict[str,Any]],match_star):
-    meta={"cung":None,"can":None,"dia_chi":None,"ngu_hanh":None,"am_duong":None,"vong_truong_sinh":None,"tuan":False,"triet":False,"dai_van":{},"tieu_van":{},"luu_nien":{},"luu_nguyet":{},"luu_nhat":{}}
+def parse_palace_items(items:Iterable[Dict[str,Any]],match_star,fallback_dia_chi=None):
+    meta={"cung":None,"can":None,"dia_chi":None,"can_chi":None,"ngu_hanh":None,"am_duong":None,"vong_truong_sinh":None,"tuan":False,"triet":False,"dai_van":{},"tieu_van":{},"luu_nien":{},"luu_nguyet":{},"luu_nhat":{}}
     stars=[]
     for item in items or []:
         text=str(item.get("text","")).strip()
         if not text:continue
         kind=classify_position(item)
-        if kind=="palace_name":meta["cung"]=next((p for p in PALACES if norm(p)==norm(text)),meta["cung"]);continue
+        if kind=="palace_name":
+            meta["cung"]=next((p for p in PALACES if norm(p)==norm(text)),meta["cung"]);continue
         if kind=="can_chi":
             can,branch=can_chi(text); meta["can"]=can or meta["can"]; meta["dia_chi"]=branch or meta["dia_chi"];continue
+        if kind=="can":meta["can"]=parse_can_token(text) or meta["can"];continue
+        if kind=="dia_chi":meta["dia_chi"]=parse_branch_token(text) or meta["dia_chi"];continue
         if kind=="element":
             e,ay=parse_element(text);meta["ngu_hanh"]=e;meta["am_duong"]=ay;continue
         if kind=="tuan":meta["tuan"]=True;continue
@@ -99,8 +110,9 @@ def parse_palace_items(items:Iterable[Dict[str,Any]],match_star):
             elif p and p.get("kind")=="luu_nhat":meta["luu_nhat"]["ngay"]=p.get("ngay")
             continue
         found=match_star(text)
-        if found:
-            found["source_text"]=text; stars.append(found)
+        if found:found["source_text"]=text;stars.append(found)
+    if meta["dia_chi"] is None and fallback_dia_chi:meta["dia_chi"]=parse_branch_token(fallback_dia_chi)
+    if meta["can"] and meta["dia_chi"]:meta["can_chi"]=f"{meta['can']} {meta['dia_chi']}"
     seen=set();unique=[]
     for s in stars:
         key=(s.get("name"),s.get("type"),bool(s.get("luu")))
