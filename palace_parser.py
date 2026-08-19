@@ -49,6 +49,10 @@ def parse_period(text):
     s=str(text).strip();n=norm(s)
     m=re.search(r"(?:Th|Thang)\.?\s*(\d{1,2})\b",s,re.I)
     if m:return {"kind":"luu_nguyet","thang":int(m.group(1))}
+    # In the chart layout T1..T12 is the Tiểu vận marker printed at the
+    # lower-right of every palace. It is an index, not a star and not age.
+    mt=re.fullmatch(r"T\s*(\d{1,2})",s,re.I)
+    if mt:return {"kind":"tieu_van","so_thu":int(mt.group(1))}
     if re.match(r"(?:luu\s*)?nhat",s,re.I):
         m2=re.search(r"(\d{1,2})",s);return {"kind":"luu_nhat","ngay":int(m2.group(1)) if m2 else None}
     if n.startswith("dv"):return {"kind":"dai_van","cung":re.sub(r"^dv[.]?","",s,flags=re.I).strip(" .")}
@@ -69,15 +73,17 @@ def classify_position(item):
     if "tuan" in low:return "tuan"
     if "triet" in low:return "triet"
     if any(norm(x)==low for x in LIFE_STAGES):return "life_stage"
-    if y<.28 and x<.42 and can_chi(text)[1]:return "can_chi"
-    if y<.28 and x<.42 and parse_can_token(text):return "can"
-    if y<.28 and x<.42 and parse_branch_token(text):return "dia_chi"
-    if y<.38 and x<.42 and parse_element(text)[0]:return "element"
-    if y<.30 and x>.58 and re.fullmatch(r"\d{1,3}",text):return "dai_van_age"
-    if y<.36 and x>.58 and parse_period(text):return "period"
-    if y>.72 and x<.42 and low.startswith("dv"):return "dai_van_cung"
-    if y>.72 and x>.58 and low.startswith("ln"):return "luu_nien_cung"
-    if y>.72 and .25<=x<=.75 and (low.startswith("tv") or "tieuhan" in low):return "tieu_van_cung"
+    if y<.30 and x<.45 and can_chi(text)[1]:return "can_chi"
+    if y<.30 and x<.45 and parse_can_token(text):return "can"
+    if y<.30 and x<.45 and parse_branch_token(text):return "dia_chi"
+    if y<.40 and x<.45 and parse_element(text)[0]:return "element"
+    if y<.32 and x>.55 and re.fullmatch(r"\d{1,3}",text):return "dai_van_age"
+    if y<.40 and x>.55 and parse_period(text):return "period"
+    if y>.70 and x<.45 and low.startswith("dv"):return "dai_van_cung"
+    if y>.70 and x>.55 and low.startswith("ln"):return "luu_nien_cung"
+    # T1..T12 is the Tiểu vận index at the bottom-right of a palace.
+    if y>.70 and x>.55 and re.fullmatch(r"t\s*\d{1,2}",text,re.I):return "tieu_van_marker"
+    if y>.70 and .25<=x<=.75 and (low.startswith("tv") or "tieuhan" in low):return "tieu_van_cung"
     if re.fullmatch(r"th\d{1,2}",low):return "luu_nguyet"
     return "star"
 
@@ -101,10 +107,11 @@ def parse_palace_items(items:Iterable[Dict[str,Any]],match_star,fallback_dia_chi
         if kind=="tuan":meta["tuan"]=True;continue
         if kind=="triet":meta["triet"]=True;continue
         if kind=="life_stage":meta["vong_truong_sinh"]=next((x for x in LIFE_STAGES if norm(x)==norm(text)),text);continue
-        if kind in {"dai_van_age","dai_van_cung","tieu_van_cung","luu_nien_cung","period","luu_nguyet"}:
+        if kind in {"dai_van_age","dai_van_cung","tieu_van_marker","tieu_van_cung","luu_nien_cung","period","luu_nguyet"}:
             p=parse_period(text)
             if kind=="dai_van_age" and p:meta["dai_van"]["tuoi_bat_dau"]=p["value"]
             elif kind=="dai_van_cung":meta["dai_van"]["cung"]=re.sub(r"^ĐV\.?","",text,flags=re.I).strip()
+            elif kind=="tieu_van_marker" and p:meta["tieu_van"]["so_thu"]=p["so_thu"]
             elif kind=="tieu_van_cung":meta["tieu_van"]["cung"]=re.sub(r"^(?:TV|Tiểu hạn)\.?","",text,flags=re.I).strip()
             elif kind=="luu_nien_cung":meta["luu_nien"]["cung"]=re.sub(r"^LN\.?","",text,flags=re.I).strip()
             elif p and p.get("kind")=="luu_nguyet":meta["luu_nguyet"]["thang"]=p["thang"]
