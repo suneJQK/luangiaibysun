@@ -89,31 +89,6 @@ st.markdown(
         font-size: 1rem;
         line-height: 1.6;
     }
-
-    /* Khung cuộn độc lập cho kết quả luận giải */
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor) {
-        max-height: 75vh;
-        overflow-y: auto;
-        padding: 15px;
-        border: 1px solid #30363d;
-        border-radius: 10px;
-        background-color: #161b22;
-    }
-
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar {
-        width: 8px;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-track {
-        background: #0d1117;
-        border-radius: 8px;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-thumb {
-        background: #30363d;
-        border-radius: 8px;
-    }
-    div[data-testid="stVerticalBlock"]:has(> div.scrollable-anchor)::-webkit-scrollbar-thumb:hover {
-        background: #d4af37;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -562,7 +537,7 @@ def generate_analysis(
             contents.append(types.Part.from_bytes(data=crop_bytes, mime_type="image/png"))
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",  # Sử dụng model gemini-3.6-flash
+        model="gemini-3.6-flash",
         contents=contents,
         config=types.GenerateContentConfig(
             temperature=0.2,
@@ -634,7 +609,6 @@ def ask_chat(question, selected_year, main_system_prompt, engine_data):
 
     history_parts = []
 
-    # Giới hạn lịch sử để tránh prompt phình quá lớn.
     for message in st.session_state.chat_messages[-12:]:
         role = message.get("role", "user")
         content = message.get("content", "")
@@ -650,7 +624,7 @@ CÂU HỎI MỚI:{question}
 """
 
     response = client.models.generate_content(
-        model="gemini-3.6-flash",  # Sử dụng model gemini-3.6-flash
+        model="gemini-3.6-flash",
         contents=full_prompt,
         config=types.GenerateContentConfig(
             temperature=0.25,
@@ -944,7 +918,7 @@ if analyze_clicked:
 
 
 # ============================================================
-# CỘT OUTPUT
+# CỘT OUTPUT (LUẬN GIẢI CÓ THANH CUỘN RIÊNG)
 # ============================================================
 
 with col_output:
@@ -957,9 +931,8 @@ with col_output:
     analysis_result = st.session_state.get("analysis_result", "")
 
     if analysis_result:
-        analysis_container = st.container()
-        with analysis_container:
-            st.markdown('<div class="scrollable-anchor"></div>', unsafe_allow_html=True)
+        # Sử dụng st.container với height để ép tạo khung cuộn riêng độc lập
+        with st.container(height=700):
             st.markdown(
                 f'<div class="scrollable-result-content">{analysis_result}</div>',
                 unsafe_allow_html=True,
