@@ -617,16 +617,13 @@ def timThienMa(chiNam):
 
 
 def timPhaToai(chiNam):
-    demNghich = chiNam % 3
-    if demNghich == 0:
-        return 6
-    elif demNghich == 1:
-        return 10
-    elif demNghich == 2:
-        return 2
-    else:
-        raise Exception("Không tìm được Phá toái")
-
+    if chiNam in (1, 4, 7, 10):
+        return 6      # Tý, Mão, Ngọ, Dậu → Tỵ
+    elif chiNam in (3, 6, 9, 12):
+        return 10     # Dần, Tỵ, Thân, Hợi → Dậu
+    elif chiNam in (2, 5, 8, 11):
+        return 2      # Sửu, Thìn, Mùi, Tuất → Sửu
+    raise Exception("Không tìm được vị trí Phá Toái")
 
 def timTriet(canNam):
     # Giáp Kỷ, Thân Dậu cung
