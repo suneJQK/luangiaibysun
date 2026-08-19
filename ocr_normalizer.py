@@ -1,134 +1,148 @@
 # -*- coding: utf-8 -*-
-"""OCR -> structured Tử Vi data.
-The module deliberately removes OCR noise before anything is sent to the LLM.
+"""Noise-tolerant OCR normalization for Tử Vi.
+
+OCR is evidence only. This layer converts noisy text into canonical stars,
+classifies them, and keeps uncertain fragments outside the AI payload.
 """
 from __future__ import annotations
-import json, re, unicodedata
+import json,re,unicodedata
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-from palace_parser import parse_palace_items, norm
+from typing import Optional
+from palace_parser import parse_palace_items,norm
 
 BASE=Path(__file__).resolve().parent
+EXTRA_ALIASES={
+    "thientho":"Thiên Thọ","thien tho":"Thiên Thọ","thientho":"Thiên Thọ",
+    "thienkhoc":"Thiên Khốc","thien khoc":"Thiên Khốc","thienkhoc":"Thiên Khốc",
+    "thienhu":"Thiên Hư","thien hu":"Thiên Hư",
+    "daihao":"Đại Hao","dai hao":"Đại Hao","dai fao":"Đại Hao",
+    "tieuhao":"Tiểu Hao","tieu hao":"Tiểu Hao",
+    "benhphu":"Bệnh Phù","benh phu":"Bệnh Phù","benhphù":"Bệnh Phù",
+    "lucsy":"Lực Sỹ","luc sy":"Lực Sỹ","lu csy":"Lực Sỹ",
+    "vantinh":"Văn Tinh","van tinh":"Văn Tinh","vantinh":"Văn Tinh",
+    "vanxuong":"Văn Xương","van xuong":"Văn Xương",
+    "vankhuc":"Văn Khúc","van khuc":"Văn Khúc",
+    "thienma":"Thiên Mã","thien ma":"Thiên Mã",
+    "tangmon":"Tang Môn","tang mon":"Tang Môn","bachho":"Bạch Hổ","bach ho":"Bạch Hổ",
+    "hoaloc":"Hóa Lộc","hoa loc":"Hóa Lộc","hoaquyen":"Hóa Quyền","hoa quyen":"Hóa Quyền",
+    "hoakhoa":"Hóa Khoa","hoa khoa":"Hóa Khoa","hoaky":"Hóa Kỵ","hoa ky":"Hóa Kỵ",
+    "thiendong":"Thiên Đồng","thien dong":"Thiên Đồng","thienphu":"Thiên Phủ","thien phu":"Thiên Phủ",
+    "thienco":"Thiên Cơ","thien co":"Thiên Cơ","thaiduong":"Thái Dương","thai duong":"Thái Dương",
+    "thaiam":"Thái Âm","thai am":"Thái Âm","vukhuc":"Vũ Khúc","vu khuc":"Vũ Khúc",
+    "thamlang":"Tham Lang","tham lang":"Tham Lang","cumen":"Cự Môn","cu men":"Cự Môn",
+    "thientuong":"Thiên Tướng","thien tuong":"Thiên Tướng","thienluong":"Thiên Lương","thien luong":"Thiên Lương",
+    "thatsat":"Thất Sát","that sat":"Thất Sát","phaquan":"Phá Quân","pha quan":"Phá Quân",
+    "liemtrinh":"Liêm Trinh","liem trinh":"Liêm Trinh","l iem trinh":"Liêm Trinh",
+    "t u vi":"Tử Vi","tuvi":"Tử Vi","tu vi":"Tử Vi",
+    "thienkhoi":"Thiên Khôi","thien khoi":"Thiên Khôi","thienviet":"Thiên Việt","thien viet":"Thiên Việt",
+    "thientai":"Thiên Tài","thien tai":"Thiên Tài","trucphu":"Trực Phù","truc phu":"Trực Phù",
+    "diakhong":"Địa Không","dia khong":"Địa Không","diakiep":"Địa Kiếp","dia kiep":"Địa Kiếp"
+}
 
-def dictionary():
-    return json.loads((BASE/"tu_vi_dictionary.json").read_text(encoding="utf-8"))
-
-def strip_accents(s):
-    return "".join(c for c in unicodedata.normalize("NFD",str(s)) if unicodedata.category(c)!="Mn")
-
+def dictionary():return json.loads((BASE/"tu_vi_dictionary.json").read_text(encoding="utf-8"))
 def clean(s):
-    s=re.sub(r"\[conf=[0-9.]+\]","",str(s))
-    s=re.sub(r"[|\[\]{}<>]"," ",s)
+    s=re.sub(r"\[conf=[0-9.]+\]","",str(s));s=re.sub(r"[|\[\]{}<>]"," ",s)
     return re.sub(r"\s+"," ",s).strip()
 
-def _star_index():
-    d=dictionary(); groups={
-        "chinh_tinh":set(d.get("major_stars",[])),
-        "phu_tinh":set(d.get("supporting_stars",[])),
-        "hoa_tinh":set(d.get("transformations",[])),
-        "sat_tinh":set(d.get("malefics",[])),
-    }
-    canonical={norm(x):x for group in groups.values() for x in group}
-    aliases={norm(k):v for k,v in d.get("aliases",{}).items()}
-    all_names={**canonical,**aliases}
-    return groups, all_names
+def _index():
+    d=dictionary();groups={"chinh_tinh":set(d.get("major_stars",[])),"phu_tinh":set(d.get("supporting_stars",[])),"hoa_tinh":set(d.get("transformations",[])),"sat_tinh":set(d.get("malefics",[]))}
+    names={norm(x):x for group in groups.values() for x in group}
+    names.update({norm(k):v for k,v in d.get("aliases",{}).items()});names.update({norm(k):v for k,v in EXTRA_ALIASES.items()})
+    return groups,names
 
-def _strip_metadata(text: str):
-    """Return (core, luu, status, am_duong). OCR often adds + - ~ L [ ] and M/V/Đ/H."""
+def _metadata(text):
     s=clean(text)
-    luu=bool(re.search(r"(?:^|\s|\.)L\.?\s*(?=[A-Za-zÀ-ỹĐđ])",s,re.I))
-    s=re.sub(r"^\s*L\.?\s*", "", s, flags=re.I)
-    s=re.sub(r"^\s*(?:LN|ĐV|DV)\.?\s*", "", s, flags=re.I)
+    # L./LN./ĐV. are metadata prefixes, not part of star names.
+    luu=bool(re.search(r"(?:^|[\s\[\(])L\.?\s*(?=[A-Za-zÀ-ỹĐđ])",s,re.I))
     am_duong="Dương" if re.match(r"^\s*\+",s) else "Âm" if re.match(r"^\s*-",s) else None
-    s=re.sub(r"^[+\-~]+\s*", "", s)
-    status=None
-    m=re.search(r"\((M|V|Đ|D|H)\)\s*$",s,re.I)
-    if m:
-        raw=m.group(1).upper(); status={"D":"Đ"}.get(raw,raw); s=s[:m.start()].strip()
-    s=re.sub(r"\bTh\.?\s*\d{1,2}\b.*$","",s,flags=re.I).strip()
-    s=re.sub(r"\s+"," ",s).strip(" .,:;\"'")
-    return s,luu,status,am_duong
+    status=None;m=re.search(r"\((M|V|Đ|D|H)\)",s,re.I)
+    if m:status={"D":"Đ"}.get(m.group(1).upper(),m.group(1).upper())
+    s=re.sub(r"(?:^|\s)L\.?\s*"," ",s,flags=re.I)
+    s=re.sub(r"\b(?:LN|ĐV|DV)\.?\s*"," ",s,flags=re.I)
+    s=re.sub(r"^[+\-~]+\s*","",s)
+    s=re.sub(r"\((?:M|V|Đ|D|H)\)"," ",s,flags=re.I)
+    s=re.sub(r"\bTh\.?\s*\d{1,2}\b.*$","",s,flags=re.I)
+    return re.sub(r"\s+"," ",s).strip(" .,:;\"'"),luu,status,am_duong
 
-def _best_name(text: str) -> Optional[str]:
-    groups,names=_star_index(); key=norm(text)
-    if not key: return None
-    if key in names: return names[key]
-    # Prefer longest canonical/alias contained in the OCR fragment.
-    candidates=sorted(names.items(),key=lambda kv:len(kv[0]),reverse=True)
-    for k,name in candidates:
-        if len(k)>=4 and (k in key or key in k): return name
-    # OCR character substitutions: fuzzy match only against reasonably long names.
-    best=None; score=0.0
-    for k,name in candidates:
-        if len(k)<4: continue
+def _type(name,groups):return next((g for g,s in groups.items() if name in s),"phu_tinh")
+def _fuzzy(key,names,threshold=.82):
+    if key in names:return names[key]
+    best=None;score=0
+    for k,name in names.items():
+        if len(k)<5:continue
         s=SequenceMatcher(None,key,k).ratio()
-        if s>score: score,best=s,name
-    return best if score>=0.78 else None
+        if s>score:score,best=s,name
+    return best if score>=threshold else None
 
 def match_star(raw):
-    text,luu,status,am_duong=_strip_metadata(raw)
-    groups,_=_star_index()
-    name=_best_name(text)
+    text,luu,status,am_duong=_metadata(raw);groups,names=_index();key=norm(text)
+    if not key:return None
+    name=names.get(key)
     if not name:
-        # A single OCR line can contain two or more stars; caller can use extract_stars.
-        return None
-    typ=next((g for g,s in groups.items() if name in s),"phu_tinh")
-    return {"name":name,"type":typ,"luu":luu,"trang_thai":status,"am_duong":am_duong}
+        for k,n in sorted(names.items(),key=lambda x:len(x[0]),reverse=True):
+            if len(k)>=5 and k in key:name=n;break
+    if not name:name=_fuzzy(key,names,.78)
+    if not name:return None
+    return {"name":name,"type":_type(name,groups),"luu":luu,"trang_thai":status,"am_duong":am_duong}
 
-def extract_stars(raw: str) -> List[dict]:
-    """Extract all known stars from a noisy line, not just an exact whole-line match."""
-    groups,names=_star_index(); result=[]; seen=set()
-    original=clean(raw)
-    # Try every known name/alias, longest first, so compound lines are split safely.
-    for k,name in sorted(names.items(),key=lambda kv:len(kv[0]),reverse=True):
-        if len(k)<4: continue
-        if k not in norm(original): continue
-        # Find metadata immediately around the occurrence using a forgiving regex.
-        luu=bool(re.search(r"(?:^|[\s+\-~\[]|\.)L\.?\s*$", original[:max(0, original.lower().find(name.lower()))], re.I))
-        status=None; am_duong=None
-        typ=next((g for g,s in groups.items() if name in s),"phu_tinh")
-        key=(name,typ,luu)
-        if key not in seen:
-            seen.add(key); result.append({"name":name,"type":typ,"luu":luu,"trang_thai":status,"am_duong":am_duong})
-    if not result:
+def extract_stars(raw):
+    """Split compound OCR lines and recover fuzzy star names.
+    Examples: 'Văn Xương (Đ) Linh Tinh (H)' -> two stars;
+    '-Thuỷ +THIÊN ĐỒNG (Đ) Ths' -> Thiên Đồng.
+    """
+    original=clean(raw);core,default_luu,_,_= _metadata(original);tokens=re.findall(r"[A-Za-zÀ-ỹĐđ]+",core)
+    groups,names=_index();found=[];seen=set()
+    # Exact windows before fuzzy windows avoids false positives.
+    for fuzzy in (False,True):
+        for size in (3,2,4,1):
+            for i in range(max(0,len(tokens)-size+1)):
+                chunk=" ".join(tokens[i:i+size]);key=norm(chunk)
+                if len(key)<5:continue
+                name=names.get(key) if not fuzzy else _fuzzy(key,names,.86)
+                if not name or name in seen:continue
+                # Reject a fuzzy one-word fragment; it creates too many false stars.
+                if fuzzy and size==1:continue
+                seen.add(name);prefix=" ".join(tokens[:i])
+                luu=default_luu or bool(re.search(r"(?:^|\s)L\.?\s*$",prefix,re.I))
+                # Find the nearest state marker in the original text.
+                status=None;am=None
+                m=re.search(r"\((M|V|Đ|D|H)\)",original,re.I)
+                if m:status={"D":"Đ"}.get(m.group(1).upper(),m.group(1).upper())
+                if re.search(r"(?:^|\s)\+\s*$",prefix):am="Dương"
+                elif re.search(r"(?:^|\s)-\s*$",prefix):am="Âm"
+                found.append({"name":name,"type":_type(name,groups),"luu":luu,"trang_thai":status,"am_duong":am})
+    if not found:
         one=match_star(raw)
-        if one: result=[one]
-    return result
+        if one:found=[one]
+    return found
 
 def _items(values):
     out=[]
-    for value in values or []:
-        if isinstance(value,dict):
-            x=dict(value); x["text"]=clean(x.get("text",x.get("raw",""))); out.append(x)
-        else:
-            out.append({"text":clean(value),"confidence":1.0,"bbox":[]})
+    for v in values or []:
+        if isinstance(v,dict):
+            x=dict(v);x["text"]=clean(x.get("text",x.get("raw","")));out.append(x)
+        else:out.append({"text":clean(v),"confidence":1.0,"bbox":[]})
     return out
 
 def normalize_processed_data(data):
-    """Return one structured object per palace; raw OCR is retained only in local review data."""
-    normalized={"schema_version":"3.0","source":"python_ocr","image_sent_to_llm":False,"cungs":{},"review":[]}
+    out={"schema_version":"3.1","source":"python_ocr","image_sent_to_llm":False,"cungs":{},"review":[]}
     for cung,values in (data or {}).get("cungs",{}).items():
-        items=_items(values)
-        # Add fuzzy star fragments as synthetic items only when a line contains known names.
-        expanded=[]
+        items=_items(values);expanded=[]
         for item in items:
             stars=extract_stars(item.get("text",""))
             if len(stars)>1:
-                # parse_palace_items will classify the original line as star; replace it with clean fragments.
-                for s in stars:
-                    expanded.append({**item,"text":s["name"],"_star_hint":s})
-            else: expanded.append(item)
-        meta=parse_palace_items(expanded,match_star)
-        # Re-apply metadata from compound-line extraction and deduplicate.
+                for star in stars:expanded.append({**item,"text":star["name"],"_star_hint":star})
+            else:expanded.append(item)
+        meta=parse_palace_items(expanded,match_star,fallback_dia_chi=cung)
         for item in expanded:
             hint=item.get("_star_hint")
             if hint:
-                for s in meta["stars"]:
-                    if s["name"]==hint["name"]: s.update({k:v for k,v in hint.items() if v is not None})
-        # Keep low-confidence review notes outside the AI payload.
+                for star in meta.get("stars",[]):
+                    if star.get("name")==hint.get("name"):star.update({k:v for k,v in hint.items() if v is not None})
         for item in items:
-            if float(item.get("confidence",1.0))<0.52:
-                normalized["review"].append({"cung":cung,"text":item.get("text",""),"confidence":item.get("confidence")})
-        normalized["cungs"][cung]=meta
-    return normalized
+            try:conf=float(item.get("confidence",1.0))
+            except Exception:conf=1.0
+            if conf<.52:out["review"].append({"cung":cung,"text":item.get("text",""),"confidence":conf,"bbox":item.get("bbox",[])})
+        out["cungs"][cung]=meta
+    return out
