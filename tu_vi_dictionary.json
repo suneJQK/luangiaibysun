@@ -1,0 +1,10 @@
+{
+  "earthly_branches": ["Tý","Sửu","Dần","Mão","Thìn","Tỵ","Ngọ","Mùi","Thân","Dậu","Tuất","Hợi"],
+  "palaces": ["Mệnh","Phụ Mẫu","Phúc Đức","Điền Trạch","Quan Lộc","Nô Bộc","Thiên Di","Tật Ách","Tài Bạch","Tử Tức","Phu Thê","Huynh Đệ"],
+  "major_stars": ["Tử Vi","Thiên Cơ","Thái Dương","Vũ Khúc","Thiên Đồng","Liêm Trinh","Thiên Phủ","Thái Âm","Tham Lang","Cự Môn","Thiên Tướng","Thiên Lương","Thất Sát","Phá Quân"],
+  "common_stars": ["Tả Phù","Hữu Bật","Văn Xương","Văn Khúc","Thiên Khôi","Thiên Việt","Lộc Tồn","Kình Dương","Đà La","Hỏa Tinh","Linh Tinh","Địa Không","Địa Kiếp","Thiên Mã","Hồng Loan","Thiên Hỷ","Đào Hoa","Phục Binh","Thiên Hình","Thiên Riêu","Thiên Quan","Thiên Phúc"],
+  "aliases": {
+    "Ty": "Tý", "Ti": "Tỵ", "Ty. ": "Tý", "Thien Phu": "Thiên Phủ", "Tu Vi": "Tử Vi", "Thai Duong": "Thái Dương", "Vu Khuc": "Vũ Khúc", "Tham Lang": "Tham Lang"
+  },
+  "confidence_thresholds": {"accept": 0.75, "review": 0.55, "reject": 0.35}
+}
